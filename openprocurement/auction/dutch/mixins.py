@@ -97,7 +97,6 @@ class BiddersServiceMixin(BiddersServiceMixin):
 
 
 class DutchPostAuctionMixin(PostAuctionServiceMixin):
-Т
     def put_auction_data(self):
         if self.worker_defaults.get('with_document_service', False):
             doc_id = self.upload_audit_file_with_document_service()
