@@ -14,7 +14,7 @@ from dateutil.tz import tzlocal
 from barbecue import cooking
 
 from openprocurement.auction.executor import AuctionsExecutor
-from openprocurement.auction.worker.server import run_server
+from openprocurement.auction.dutch.server import run_server
 from openprocurement.auction.worker.mixins import (
     RequestIDServiceMixin, AuditServiceMixin,
     DateTimeServiceMixin, TIMEZONE

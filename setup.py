@@ -17,10 +17,9 @@ ENTRY_POINTS = {
     'console_scripts': [
         'auction_dutch = openprocurement.auction.dutch.cli:main',
     ],
-    # XXX TODO procurementMethodType for Dutch
-    # 'openprocurement.auction.auctions': [
-    #     'esco.EU = openprocurement.auction.esco.includeme:includeme'
-    # ],
+    'openprocurement.auction.auctions': [
+        'dgfNew = openprocurement.auction.dutch.includeme:includeme'
+    ],
     'openprocurement.auction.robottests': [
         'dutch_tests = openprocurement.auction.dutch.tests.functional.main:includeme'
     ],
