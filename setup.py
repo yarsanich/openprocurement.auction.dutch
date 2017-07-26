@@ -23,6 +23,9 @@ ENTRY_POINTS = {
     # ],
     'openprocurement.auction.robottests': [
         'dutch_tests = openprocurement.auction.dutch.tests.functional.main:includeme'
+    ],
+    'openprocurement.auction.routes': [
+        'dutchtenders = openprocurement.auction.dutch.views:includeme',
     ]
 }
 
