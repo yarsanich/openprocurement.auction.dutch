@@ -58,7 +58,7 @@ def test_prepare_auction_document(auction, db, mocker):
     assert set(['tenderID', 'initial_bids', 'current_stage',
             'description', 'title', 'phase', 'items',
             'stages', 'procurementMethodType', 'results',
-            'value', 'test_auction_data', 'auction_type', '_rev',
+            'minValue', 'test_auction_data', 'auction_type', '_rev',
             'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity']) \
             == set(auction_document.keys()) == set(auction.auction_document.keys())
     auction.prepare_auction_document()  # method is calling to cover line, on which check public_document existence is passing
@@ -94,7 +94,7 @@ def test_prepare_auction_document_smd_fast_forward(auction, db, mocker):
     assert set(['tenderID', 'initial_bids', 'current_stage',
                 'description', 'title', 'phase', 'items',
                 'stages', 'procurementMethodType', 'results',
-                'value', 'test_auction_data', 'auction_type', '_rev',
+                'minValue', 'test_auction_data', 'auction_type', '_rev',
                 'mode', 'TENDERS_API_VERSION', '_id', 'procuringEntity', 'endDate']) \
            == set(auction_document.keys()) == set(auction.auction_document.keys())
     del auction._auction_data['data']['submissionMethodDetails']
