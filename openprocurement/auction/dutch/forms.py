@@ -13,31 +13,14 @@ from openprocurement.auction.utils import prepare_extra_journal_fields
 wtforms_json.init()
 
 
-class BidsForm(Form):
-    bidder_id = StringField(
-        'bidder_id',
-        validators=[
-            InputRequired(message=u'No bidder id'),
-            validate_bidder_id
-        ]
-    )
-    bid = FloatField(
-        'bid',
-        validators=[
-            InputRequired(message=u'Bid amount is required'),
-            validate_bid_value
-        ]
-    )
-
-
 def validate_bid_value(form, field):
     """
     On Dutch Phase: Bid must be equal current dutch amount.
     On Sealed Bids Phase: Bid must be greater then current dutch amount.
     On Best Bid Phase: Bid must be greater then current dutch amount.
     """
-    try
-        current_amount = min(form.document['TODO: Назва поля, поле масив'])
+    try:
+        current_amount = form.document['TODO: Назва поля, поле масив'][-1]
     except KeyError as e:
         form[field.name].errors.append(e.message)
         raise e
@@ -72,7 +55,7 @@ def validate_bidder_id(form, field):
     On Best Bid Phase: Bidder id must be equal dutchWinner.bidder_id.
     """
     current_phase = form.document.get('phase')
-    if current_phase == 'dutch'
+    if current_phase == 'dutch':
         return
 
     try:
@@ -95,6 +78,23 @@ def validate_bidder_id(form, field):
         message = u'Unknown auction phase'
         form[field.name].errors.append(message)
         raise ValidationError(message)
+
+
+class BidsForm(Form):
+    bidder_id = StringField(
+        'bidder_id',
+        validators=[
+            InputRequired(message=u'No bidder id'),
+            validate_bidder_id
+        ]
+    )
+    bid = FloatField(
+        'bid',
+        validators=[
+            InputRequired(message=u'Bid amount is required'),
+            validate_bid_value
+        ]
+    )
 
 
 def form_handler():
