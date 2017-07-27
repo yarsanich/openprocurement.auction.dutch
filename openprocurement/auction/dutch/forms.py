@@ -12,59 +12,89 @@ from openprocurement.auction.utils import prepare_extra_journal_fields
 
 wtforms_json.init()
 
-# XXX TODO 3 Forms for 3 phases
+
+class BidsForm(Form):
+    bidder_id = StringField(
+        'bidder_id',
+        validators=[
+            InputRequired(message=u'No bidder id'),
+            validate_bidder_id
+        ]
+    )
+    bid = FloatField(
+        'bid',
+        validators=[
+            InputRequired(message=u'Bid amount is required'),
+            validate_bid_value
+        ]
+    )
+
 
 def validate_bid_value(form, field):
     """
-    Bid must be greater then 0
+    On Dutch Phase: Bid must be equal current dutch amount.
+    On Sealed Bids Phase: Bid must be greater then current dutch amount.
+    On Best Bid Phase: Bid must be greater then current dutch amount.
     """
+    try
+        current_amount = min(form.document['TODO: Назва поля, поле масив'])
+    except KeyError as e:
+        form[field.name].errors.append(e.message)
+        raise e
+
     if field.data <= 0.0 and field.data != -1:
-        raise ValidationError(u'To low value')
+        message = u'To low value'
+        form[field.name].errors.append(message)
+        raise ValidationError(message)
 
-
-def validate_bid_change_on_bidding(form, field):
-    """
-    Bid must be lower then previous bidder bid amount minus minimalStep amount
-    """
-    #  XXX TODO Validate by phase (Dutch, seald, best)
-    stage_id = form.document['current_stage']
-    if form.auction.features:
-        minimal_bid = form.document['stages'][stage_id]['amount_features']
-        minimal = Fraction(minimal_bid) * form.auction.bidders_coeficient[form.data['bidder_id']]
-        minimal -= Fraction(form.document['minimalStep']['amount'])
-        if field.data > minimal:
-            raise ValidationError(u'Too high value')
+    current_phase = form.document.get('phase')
+    if current_phase == 'dutch':
+        if Fraction(field.data) != Fraction(current_amount):
+            message = u'applyAmount don\'t match with currentDutchAmount'
+            form[field.name].errors.append(message)
+            raise ValidationError(message)
+    elif current_phase == 'sealedBids' or current_phase == 'bestBid':
+        if (Fraction(current_amount) >= Fraction(self.bid.data) and
+                field.data != -1):
+            message = u'Bid value can\'t be less or equal current amount'
+            form[field.name].errors.append(message)
+            raise ValidationError(message)
     else:
-        minimal_bid = form.document['stages'][stage_id]['amount']
-        if field.data > (minimal_bid - form.document['minimalStep']['amount']):
-            raise ValidationError(u'Too high value')
+        message = u'Invalid auction phase'
+        form[field.name].errors.append(message)
+        raise ValidationError(message)
 
 
-def validate_bidder_id_on_bidding(form, field):
-    #  XXX TODO Validate by phase (Dutch, seald, best)
-    stage_id = form.document['current_stage']
-    if field.data != form.document['stages'][stage_id]['bidder_id']:
-        raise StopValidation(u'Not valid bidder')
+def validate_bidder_id(form, field):
+    """
+    On Dutch Phase: Bidder id is trusted.
+    On Sealed Bids Phase: Bidder id must don't be equal dutchWinner.bidder_id.
+    On Best Bid Phase: Bidder id must be equal dutchWinner.bidder_id.
+    """
+    current_phase = form.document.get('phase')
+    if current_phase == 'dutch'
+        return
 
+    try:
+        dutch_winner = form.document['dutchWinner']['bidder_id']
+    except KeyError as e:
+        form[field.name].errors.append(e)
+        raise e
 
-class BidsForm(Form):
-    bidder_id = StringField('bidder_id',
-                            [InputRequired(message=u'No bidder id'), ])
-
-    bid = FloatField('bid', [InputRequired(message=u'Bid amount is required'),
-                             validate_bid_value])
-
-    def validate_bid(self, field):
-        stage_id = self.document['current_stage']
-        if self.document['stages'][stage_id]['type'] == 'bids':
-            validate_bid_change_on_bidding(self, field)
-        else:
-            raise ValidationError(u'Stage not for bidding')
-
-    def validate_bidder_id(self, field):
-        stage_id = self.document['current_stage']
-        if self.document['stages'][stage_id]['type'] == 'bids':
-            validate_bidder_id_on_bidding(self, field)
+    if current_phase == 'sealedBids':
+        if dutch_winner == field.data:
+            message = u'bidder_id match with dutchWinner.bidder_id'
+            form[field.name].errors.append(message)
+            raise ValidationError(message)
+    elif current_phase == 'bestBid':
+        if dutch_winner != field.data:
+            message = u'bidder_id don\'t match with dutchWinner.bidder_id'
+            form[field.name].errors.append(message)
+            raise ValidationError(message)
+    else:
+        message = u'Unknown auction phase'
+        form[field.name].errors.append(message)
+        raise ValidationError(message)
 
 
 def form_handler():
