@@ -74,42 +74,29 @@ def form_handler():
         form.auction = auction
         form.document = auction.db.get(auction.auction_doc_id)
         current_time = datetime.now(timezone('Europe/Kiev'))
+        phase = form.document['phase']
         if form.validate():
             # write data
             auction.add_bid(form.document['current_stage'],
                             {'amount': form.data['bid'],
                              'bidder_id': form.data['bidder_id'],
                              'time': current_time.isoformat()})
-            message = get_log_message(form, current_time)
-            app.logger.info(message, extra=prepare_extra_journal_fields(request.headers))
-            return {'status': 'ok', 'data': form.data}
-
-        else:
-            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} with errors {}".format(
-            request.json.get('bidder_id', 'None'), session['client_id'],
-            request.json.get('bid', 'None'), current_time.isoformat(),
-            repr(form.errors)), extra=prepare_extra_journal_fields(request.headers))
-            return {'status': 'failed', 'errors': form.errors}
-
-def get_log_message(form, current_time):
-    phase = form.document['phase']
-    if phase == u'dutch':
-        return "Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
-            form.data['bidder_id'], session['client_id'],
-            form.data['bid'], current_time.isoformat(), phase
-        )
-    elif phase == u'sealedBid' or phase == u'bestBid':
-        if form.data['bid'] == -1.0:
-            return "Bidder {} with client_id {} canceled bids in stage {} in {} on phase {}".format(
+            if form.data['bid'] == -1.0:
+                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {} on phase {}".format(
                 form.data['bidder_id'], session['client_id'],
                 form.document['current_stage'], current_time.isoformat(), phase
-            )
+                ), extra=prepare_extra_journal_fields(request.headers))
+                return {'status': 'ok', 'data': form.data}
+            else:
+                 app.logger.info("Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
+                 form.data['bidder_id'], session['client_id'],
+                 form.data['bid'], current_time.isoformat(), phase
+                 ), extra=prepare_extra_journal_fields(request.headers))
+                 return {'status': 'ok', 'data': form.data}
         else:
-            return "Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
-                form.data['bidder_id'], session['client_id'],
-                form.data['bid'], current_time.isoformat(), phase
-            )
-    else:
-        return "Wrong phase"
-
+            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} on phase {} with errors {}".format(
+            request.json.get('bidder_id', 'None'), session['client_id'],
+            request.json.get('bid', 'None'), current_time.isoformat(),
+            phase, repr(form.errors)), extra=prepare_extra_journal_fields(request.headers))
+            return {'status': 'failed', 'errors': form.errors}
 
