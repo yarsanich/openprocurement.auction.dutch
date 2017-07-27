@@ -14,31 +14,14 @@ from openprocurement.auction.utils import prepare_extra_journal_fields
 wtforms_json.init()
 
 
-class BidsForm(Form):
-    bidder_id = StringField(
-        'bidder_id',
-        validators=[
-            InputRequired(message=u'No bidder id'),
-            validate_bidder_id
-        ]
-    )
-    bid = FloatField(
-        'bid',
-        validators=[
-            InputRequired(message=u'Bid amount is required'),
-            validate_bid_value
-        ]
-    )
-
-
 def validate_bid_value(form, field):
     """
     On Dutch Phase: Bid must be equal current dutch amount.
     On Sealed Bids Phase: Bid must be greater then current dutch amount.
     On Best Bid Phase: Bid must be greater then current dutch amount.
     """
-    try
-        current_amount = min(form.document['TODO: Назва поля, поле масив'])
+    try:
+        current_amount = form.document['TODO: Назва поля, поле масив'][-1]
     except KeyError as e:
         form[field.name].errors.append(e.message)
         raise e
@@ -73,7 +56,7 @@ def validate_bidder_id(form, field):
     On Best Bid Phase: Bidder id must be equal dutchWinner.bidder_id.
     """
     current_phase = form.document.get('phase')
-    if current_phase == 'dutch'
+    if current_phase == 'dutch':
         return
 
     try:
@@ -98,6 +81,23 @@ def validate_bidder_id(form, field):
         raise ValidationError(message)
 
 
+class BidsForm(Form):
+    bidder_id = StringField(
+        'bidder_id',
+        validators=[
+            InputRequired(message=u'No bidder id'),
+            validate_bidder_id
+        ]
+    )
+    bid = FloatField(
+        'bid',
+        validators=[
+            InputRequired(message=u'Bid amount is required'),
+            validate_bid_value
+        ]
+    )
+
+
 def form_handler():
     auction = app.config['auction']
     with auction.bids_actions:
@@ -105,6 +105,7 @@ def form_handler():
         form.auction = auction
         form.document = auction.db.get(auction.auction_doc_id)
         current_time = datetime.now(timezone('Europe/Kiev'))
+        phase = form.document['phase']
         if form.validate():
             # write data
             auction.add_bid(form.document['current_stage'],
@@ -112,20 +113,19 @@ def form_handler():
                              'bidder_id': form.data['bidder_id'],
                              'time': current_time.isoformat()})
             if form.data['bid'] == -1.0:
-                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {}".format(
+                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {} on phase {}".format(
                     form.data['bidder_id'], session['client_id'],
-                    form.document['current_stage'], current_time.isoformat()
+                    form.document['current_stage'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
             else:
-                app.logger.info("Bidder {} with client_id {} placed bid {} in {}".format(
+                app.logger.info("Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
                     form.data['bidder_id'], session['client_id'],
-                    form.data['bid'], current_time.isoformat()
+                    form.data['bid'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
             return {'status': 'ok', 'data': form.data}
         else:
-            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} with errors {}".format(
+            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} on phase {} with errors {}".format(
                 request.json.get('bidder_id', 'None'), session['client_id'],
-                request.json.get('bid', 'None'), current_time.isoformat(),
-                repr(form.errors)
+                request.json.get('bid', 'None'), current_time.isoformat(), phase, repr(form.errors)
             ), extra=prepare_extra_journal_fields(request.headers))
             return {'status': 'failed', 'errors': form.errors}
