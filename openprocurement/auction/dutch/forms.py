@@ -104,6 +104,7 @@ def form_handler():
         form.auction = auction
         form.document = auction.db.get(auction.auction_doc_id)
         current_time = datetime.now(timezone('Europe/Kiev'))
+        phase = form.document['phase']
         if form.validate():
             # write data
             auction.add_bid(form.document['current_stage'],
@@ -111,20 +112,19 @@ def form_handler():
                              'bidder_id': form.data['bidder_id'],
                              'time': current_time.isoformat()})
             if form.data['bid'] == -1.0:
-                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {}".format(
+                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {} on phase {}".format(
                     form.data['bidder_id'], session['client_id'],
-                    form.document['current_stage'], current_time.isoformat()
+                    form.document['current_stage'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
             else:
-                app.logger.info("Bidder {} with client_id {} placed bid {} in {}".format(
+                app.logger.info("Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
                     form.data['bidder_id'], session['client_id'],
-                    form.data['bid'], current_time.isoformat()
+                    form.data['bid'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
             return {'status': 'ok', 'data': form.data}
         else:
-            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} with errors {}".format(
+            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} on phase {} with errors {}".format(
                 request.json.get('bidder_id', 'None'), session['client_id'],
-                request.json.get('bid', 'None'), current_time.isoformat(),
-                repr(form.errors)
+                request.json.get('bid', 'None'), current_time.isoformat(), phase, repr(form.errors)
             ), extra=prepare_extra_journal_fields(request.headers))
             return {'status': 'failed', 'errors': form.errors}
