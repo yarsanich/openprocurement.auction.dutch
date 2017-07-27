@@ -86,13 +86,12 @@ def form_handler():
                     form.data['bidder_id'], session['client_id'],
                     form.document['current_stage'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
-                return {'status': 'ok', 'data': form.data}
             else:
                 app.logger.info("Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
                     form.data['bidder_id'], session['client_id'],
                     form.data['bid'], current_time.isoformat(), phase
                 ), extra=prepare_extra_journal_fields(request.headers))
-                return {'status': 'ok', 'data': form.data}
+            return {'status': 'ok', 'data': form.data}
         else:
             app.logger.info("Bidder {} with client_id {} wants place bid {} in {} on phase {} with errors {}".format(
                 request.json.get('bidder_id', 'None'), session['client_id'],
