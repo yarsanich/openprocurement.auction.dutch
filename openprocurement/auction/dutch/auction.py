@@ -103,7 +103,6 @@ class Auction(DutchDBServiceMixin,
         self.retries = 10
         self.bidders_count = 0
         self.bidders_data = []
-        # XXX TODO Remove features and coeficients
         self.bidders_features = {}
         self.bidders_coeficient = {}
         self.features = None
@@ -215,7 +214,6 @@ class Auction(DutchDBServiceMixin,
                 "date": bid["date"],
                 "amount": amount
             }
-            # XXX TODO Remove features and coeficients
             if self.features:
                 amount_features = cooking(
                     amount,
@@ -237,7 +235,6 @@ class Auction(DutchDBServiceMixin,
                     bidder_id=bid["id"],
                     bidder_name=self.mapping[bid["id"]],
                     amount=amount,
-                    # XXX TODO Remove features and coeficients
                     coeficient=coeficient,
                     amount_features=amount_features,
                     annualCostsReduction=bid["value"]["annualCostsReduction"]

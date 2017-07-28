@@ -1,4 +1,3 @@
-# XXX TODO Remove multilots
 import logging
 
 from openprocurement.auction.utils import get_latest_bid_for_bidder, make_request

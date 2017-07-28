@@ -33,8 +33,6 @@ LOGGER = logging.getLogger("Auction Worker")
 class DutchDBServiceMixin(DBServiceMixin):
     """ Mixin class to work with couchdb"""
 
-    # XXX TODO Remove multilot
-
     def get_auction_info(self, prepare=False):
         if self.lot_id:
             multilot.get_auction_info(self, prepare)
@@ -91,7 +89,6 @@ class DutchDBServiceMixin(DBServiceMixin):
 
 class BiddersServiceMixin(BiddersServiceMixin):
     """Mixin class to work with bids data"""
-    # XXX TODO Remove multilot
 
     def set_auction_and_participation_urls(self):
         if self.lot_id:
@@ -143,14 +140,12 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
 class DutchStagesMixin(StagesServiceMixin):
 
     def prepare_auction_stages_fast_forward(self):
-        # XXX TODO Remove features and coeficients
         self.auction_document['auction_type'] = 'meat' if self.features else 'default'
         bids = deepcopy(self.bidders_data)
         self.auction_document["initial_bids"] = []
         bids_info = sorting_start_bids_by_amount(bids, features=self.features)
         for index, bid in enumerate(bids_info):
             amount = bid["value"]["amount"]
-            # XXX TODO Remove features and coeficients
             if self.features:
                 amount_features = cooking(
                     amount,

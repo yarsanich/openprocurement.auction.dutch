@@ -34,7 +34,6 @@ def prepare_auction_document(self):
          "items": self._auction_data["data"].get("items", []),
          "minValue": self._auction_data["data"].get("minValue", {})}
     )
-    # XXX TODO Remove meat 
     if self.features:
         self.auction_document["auction_type"] = "meat"
     else:
