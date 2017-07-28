@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 # from da
 from flask import request, session, current_app as app
 

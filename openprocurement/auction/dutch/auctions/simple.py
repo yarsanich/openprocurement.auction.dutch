@@ -29,10 +29,10 @@ def prepare_auction_document(self):
          "initial_bids": [],
          "current_stage": -1,
          "results": [],
+         "phase": "dutch",
          "procuringEntity": self._auction_data["data"].get("procuringEntity", {}),
          "items": self._auction_data["data"].get("items", []),
-         "minValue": self._auction_data["data"].get("minValue", {}),
-         "phase": "dutch"}
+         "minValue": self._auction_data["data"].get("minValue", {})}
     )
     # XXX TODO Remove meat 
     if self.features:
