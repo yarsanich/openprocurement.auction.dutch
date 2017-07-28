@@ -29,7 +29,7 @@ def prepare_auction_document(self):
          "initial_bids": [],
          "current_stage": -1,
          "results": [],
-         "phase": self._auction_data["data"].get("phase", {}),
+         "phase": self.phase,
          "procuringEntity": self._auction_data["data"].get("procuringEntity", {}),
          "items": self._auction_data["data"].get("items", []),
          "minValue": self._auction_data["data"].get("minValue", {})}
