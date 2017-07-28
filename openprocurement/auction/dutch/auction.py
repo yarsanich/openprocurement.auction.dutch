@@ -105,7 +105,6 @@ class Auction(DutchDBServiceMixin,
         self.features = None
         self.mapping = {}
         self.rounds_stages = []
-        self.phase = 'dutch'
 
     def schedule_auction(self):
         self.generate_request_id()
