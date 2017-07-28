@@ -84,47 +84,93 @@ class BidsForm(Form):
     bidder_id = StringField(
         'bidder_id',
         validators=[
-            InputRequired(message=u'No bidder id'),
+            DataRequired(message=u'No bidder id'),
             validate_bidder_id
         ]
     )
     bid = FloatField(
         'bid',
         validators=[
-            InputRequired(message=u'Bid amount is required'),
+            DataRequired(message=u'Bid amount is required'),
             validate_bid_value
         ]
     )
 
 
+def _process_form(form):
+    try:
+        form.validate():
+        if form.data['bid'] == -1.0:
+            app.logger.info(
+                "Bidder {} with client_id {} canceled bids in stage {} in {} "
+                "on phase {}".format(
+                    form.data['bidder_id'], session['client_id'],
+                    form.document['current_stage'], current_time.isoformat(),
+                    form.document['phase']),
+                extra=prepare_extra_journal_fields(request.headers))
+        else:
+            app.logger.info(
+                "Bidder {} with client_id {} placed bid {} in {} on phase "
+                "{}".format(
+                    form.data['bidder_id'], session['client_id'],
+                    form.data['bid'], current_time.isoformat(),
+                    form.document['phase']),
+                extra=prepare_extra_journal_fields(request.headers))
+        return {'status': 'ok', 'data': form.data}
+    except (ValidationError, KeyError):
+        app.logger.info(
+            "Bidder {} with client_id {} wants place bid {} in {}on phase {} "
+            "with errors {}".format(
+                request.json.get('bidder_id', 'None'), session['client_id'],
+                request.json.get('bid', 'None'), current_time.isoformat(),
+                form.document['phase'], repr(form.errors)),
+            extra=prepare_extra_journal_fields(request.headers))
+        return {'status': 'failed', 'errors': form.errors}
+
+
 def form_handler():
     auction = app.config['auction']
-    with auction.bids_actions:
-        form = app.bids_form.from_json(request.json)
-        form.auction = auction
-        form.document = auction.db.get(auction.auction_doc_id)
-        current_time = datetime.now(timezone('Europe/Kiev'))
-        phase = form.document['phase']
-        if form.validate():
-            # write data
-            auction.add_bid(form.document['current_stage'],
-                            {'amount': form.data['bid'],
-                             'bidder_id': form.data['bidder_id'],
-                             'time': current_time.isoformat()})
-            if form.data['bid'] == -1.0:
-                app.logger.info("Bidder {} with client_id {} canceled bids in stage {} in {} on phase {}".format(
-                    form.data['bidder_id'], session['client_id'],
-                    form.document['current_stage'], current_time.isoformat(), phase
-                ), extra=prepare_extra_journal_fields(request.headers))
-            else:
-                app.logger.info("Bidder {} with client_id {} placed bid {} in {} on phase {}".format(
-                    form.data['bidder_id'], session['client_id'],
-                    form.data['bid'], current_time.isoformat(), phase
-                ), extra=prepare_extra_journal_fields(request.headers))
-            return {'status': 'ok', 'data': form.data}
-        else:
-            app.logger.info("Bidder {} with client_id {} wants place bid {} in {} on phase {} with errors {}".format(
-                request.json.get('bidder_id', 'None'), session['client_id'],
-                request.json.get('bid', 'None'), current_time.isoformat(), phase, repr(form.errors)
-            ), extra=prepare_extra_journal_fields(request.headers))
-            return {'status': 'failed', 'errors': form.errors}
+    form = app.bids_form.from_json(request.json)
+    form.document = auction.auction_document
+    current_time = datetime.now(timezone('Europe/Kiev'))
+    if form.document['phase'] in ['dutch', 'bestBid']:
+        with auction.bids_actions:
+            form_result = _process_form(form)
+            if form_result['status'] = 'ok':
+                # write data
+                auction.add_bid(form.document['current_stage'],
+                                {'amount': form.data['bid'],
+                                 'bidder_id': form.data['bidder_id'],
+                                 'time': current_time.isoformat()})
+                if (form.document.get('dutchWinner', {}) != {} and
+                        form.document['phase'] == 'dutch'):
+                    form.bid.errors.append('Exist another bid')
+                    form_result['status'] = 'failed'
+                    form_result['errors'] = form.errors
+            return form_result
+    elif (form.document['phase'] == 'sealedBids' and
+            current_time < auction.best_bid_phase_start):
+            auction.requests_queue.put(request)
+            try:
+                form_result = _process_form(form)
+                if form_result['status'] == 'ok':
+                    auction.add_bid((
+                        form.document['current_stage'],
+                        {
+                            'amount': form.data['bid'],
+                            'bidder_id': form.data['bidder_id'],
+                            'time': current_time.isoformat()
+                        }
+                    ))
+            except:
+                app.logger.critical('Error while processing request')
+                form.bid.errors.append('Internal server error')
+                form_result = {
+                    'status': 'failed',
+                    'errors': form.errors
+                }
+            auction.requests_queue.get()
+            return form_result
+    else:
+        return {'status': 'failed',
+               'errors': { 'form': ['Bids period expired.']}}

@@ -9,8 +9,13 @@ from openprocurement.auction.utils import\
     sorting_start_bids_by_amount
 from openprocurement.auction.worker.utils import\
     prepare_service_stage, prepare_results_stage, prepare_bids_stage
-from openprocurement.auction.worker.constants import ROUNDS, BIDS_SECONDS,\
-    FIRST_PAUSE_SECONDS, PAUSE_SECONDS
+from openprocurement.auction.worker.constants import (
+    ROUNDS, BIDS_SECONDS,
+    FIRST_PAUSE_SECONDS,
+    PAUSE_SECONDS,
+    REQUEST_QUEUE_SIZE,
+    REQUEST_QUEUE_TIMEOUT
+)
 from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED,
     AUCTION_WORKER_SERVICE_END_BID_STAGE,
@@ -21,7 +26,6 @@ from openprocurement.auction.dutch.auctions import simple, multilot
 from openprocurement.auction.dutch.utils import prepare_initial_bid_stage
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin, StagesServiceMixin, BiddersServiceMixin
-
 
 LOGGER = logging.getLogger("Auction Worker")
 
@@ -218,6 +222,7 @@ class DutchStagesMixin(StagesServiceMixin):
         self.generate_request_id()
         self.bids_actions.acquire()
         self.get_auction_document()
+
         LOGGER.info(
             '---------------- End Bids Stage ----------------',
             extra={"JOURNAL_REQUEST_ID": self.request_id,
@@ -229,7 +234,24 @@ class DutchStagesMixin(StagesServiceMixin):
         )
         self.current_stage = self.auction_document["current_stage"]
 
-        if self.approve_bids_information():
+        approve_result = False
+        if self.auction_document['phase'] == 'sealedBids':
+            queue_timeout = 1
+            while not self.requests_queue.empty():
+                sleep(queue_timeout)
+                queue_timeout *= 2
+                if (queue_timeout > REQUEST_QUEUE_TIMEOUT or
+                        self.has_critical_error):
+                    LOGGER.critical('Queue size freeze.')
+                    self.has_critical_error = True
+                    # TODO: Зробити коректне завершення аукціону
+                    break
+                continue
+            approve_result = self.approve_bids_information()
+        else:
+            approve_result = self.approve_bids_information()
+
+        if approve_result:
             LOGGER.info("Approved bid on current stage")
             start_stage, end_stage = self.get_round_stages(self.current_round)
             all_bids = deepcopy(
@@ -339,8 +361,19 @@ class DutchStagesMixin(StagesServiceMixin):
     def next_stage(self, switch_to_round=None):
         self.generate_request_id()
         self.bids_actions.acquire()
+        if self.auction_document['phase'] == 'bestBid':
+            queue_timeout = 1
+            while not self.requests_queue.empty():
+                sleep(queue_timeout)
+                queue_timeout *= 2
+                if (queue_timeout > REQUEST_QUEUE_TIMEOUT or
+                        self.has_critical_error):
+                    LOGGER.critical('Queue size freeze.')
+                    self.has_critical_error = True
+                    # TODO: Зробити коректне завершення аукціону
+                    break
+                continue
         self.get_auction_document()
-
         if isinstance(switch_to_round, int):
             self.auction_document["current_stage"] = switch_to_round
         else:

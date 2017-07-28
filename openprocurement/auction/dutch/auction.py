@@ -24,6 +24,10 @@ from openprocurement.auction.dutch.mixins import (
     DutchDBServiceMixin, DutchStagesMixin,
     DutchPostAuctionMixin, BiddersServiceMixin, ROUNDS
 )
+from openprocurement.auction.dutch.constants import (
+    REQUEST_QUEUE_SIZE,
+    REQUEST_QUEUE_TIMEOUT
+)
 from openprocurement.auction.dutch.forms import BidsForm, form_handler
 from openprocurement.auction.dutch.journal import (
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE,
@@ -105,6 +109,15 @@ class Auction(DutchDBServiceMixin,
         self.features = None
         self.mapping = {}
         self.rounds_stages = []
+
+        # Configuration for SealedBids phase
+
+        self.has_critical_error = False
+        if REQUEST_QUEUE_SIZE == -1:
+            self.requests_queue = Queue()
+        else:
+            self.requests_queue = Queue(REQUEST_QUEUE_SIZE)
+
 
     def schedule_auction(self):
         self.generate_request_id()
