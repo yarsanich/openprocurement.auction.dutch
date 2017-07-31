@@ -10,6 +10,7 @@ from dateutil.tz import tzlocal
 from StringIO import StringIO
 
 from openprocurement.auction.dutch.auction import Auction, SCHEDULER
+from openprocurement.auction.dutch.forms import BidsForm
 from openprocurement.auction.dutch.mixins import LOGGER
 from openprocurement.auction.dutch.tests.data.data import tender_data
 
@@ -71,6 +72,14 @@ def logger():
 @pytest.fixture(scope='function')
 def scheduler():
     return SCHEDULER
+
+
+@pytest.fixture(scope='function')
+def bids_form(auction):
+    form = BidsForm()
+    auction.prepare_auction_document()
+    form.document = auction.auction_document
+    return form
 
 
 def pytest_addoption(parser):
