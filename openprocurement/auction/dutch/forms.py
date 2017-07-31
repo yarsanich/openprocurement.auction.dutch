@@ -3,7 +3,7 @@
 from flask import request, session, current_app as app
 
 from wtforms import Form, FloatField, StringField
-from wtforms.validators import InputRequired, ValidationError, StopValidation
+from wtforms.validators import DataRequired, ValidationError, StopValidation
 from fractions import Fraction
 from datetime import datetime
 from pytz import timezone
@@ -27,25 +27,21 @@ def validate_bid_value(form, field):
         raise e
 
     if field.data <= 0.0 and field.data != -1:
-        message = u'To low value'
-        form[field.name].errors.append(message)
+        message = u'Too low value'
         raise ValidationError(message)
 
     current_phase = form.document.get('phase')
     if current_phase == 'dutch':
         if Fraction(field.data) != Fraction(current_amount):
             message = u'applyAmount don\'t match with currentDutchAmount'
-            form[field.name].errors.append(message)
             raise ValidationError(message)
     elif current_phase == 'sealedBids' or current_phase == 'bestBid':
-        if (Fraction(current_amount) >= Fraction(self.bid.data) and
+        if (Fraction(current_amount) >= Fraction(field.data) and
                 field.data != -1):
             message = u'Bid value can\'t be less or equal current amount'
-            form[field.name].errors.append(message)
             raise ValidationError(message)
     else:
         message = u'Invalid auction phase'
-        form[field.name].errors.append(message)
         raise ValidationError(message)
 
 
@@ -68,16 +64,13 @@ def validate_bidder_id(form, field):
     if current_phase == 'sealedBids':
         if dutch_winner == field.data:
             message = u'bidder_id match with dutchWinner.bidder_id'
-            form[field.name].errors.append(message)
             raise ValidationError(message)
     elif current_phase == 'bestBid':
         if dutch_winner != field.data:
             message = u'bidder_id don\'t match with dutchWinner.bidder_id'
-            form[field.name].errors.append(message)
             raise ValidationError(message)
     else:
-        message = u'Unknown auction phase'
-        form[field.name].errors.append(message)
+        message = u'Invalid auction phase'
         raise ValidationError(message)
 
 
@@ -100,7 +93,7 @@ class BidsForm(Form):
 
 def _process_form(form):
     try:
-        form.validate():
+        form.validate()
         if form.data['bid'] == -1.0:
             app.logger.info(
                 "Bidder {} with client_id {} canceled bids in stage {} in {} "
@@ -137,7 +130,7 @@ def form_handler():
     if form.document['phase'] in ['dutch', 'bestBid']:
         with auction.bids_actions:
             form_result = _process_form(form)
-            if form_result['status'] = 'ok':
+            if form_result['status'] == 'ok':
                 # write data
                 auction.add_bid(form.document['current_stage'],
                                 {'amount': form.data['bid'],
