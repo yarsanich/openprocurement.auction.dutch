@@ -4,6 +4,7 @@ from requests import Session as RequestsSession
 from urlparse import urljoin
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
+from gevent.queue import Queue
 from gevent import sleep
 from apscheduler.schedulers.gevent import GeventScheduler
 from couchdb import Database, Session

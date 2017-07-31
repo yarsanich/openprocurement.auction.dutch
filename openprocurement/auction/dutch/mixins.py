@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 from datetime import datetime, timedelta
 from copy import deepcopy
@@ -12,9 +13,7 @@ from openprocurement.auction.worker.utils import\
 from openprocurement.auction.worker.constants import (
     ROUNDS, BIDS_SECONDS,
     FIRST_PAUSE_SECONDS,
-    PAUSE_SECONDS,
-    REQUEST_QUEUE_SIZE,
-    REQUEST_QUEUE_TIMEOUT
+    PAUSE_SECONDS
 )
 from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED,
@@ -23,6 +22,10 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_SERVICE_START_NEXT_STAGE,
 )
 from openprocurement.auction.dutch.auctions import simple, multilot
+from openprocurement.auction.dutch.constants import (
+    REQUEST_QUEUE_SIZE,
+    REQUEST_QUEUE_TIMEOUT
+)
 from openprocurement.auction.dutch.utils import prepare_initial_bid_stage
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin, StagesServiceMixin, BiddersServiceMixin
