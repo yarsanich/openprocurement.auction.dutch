@@ -75,7 +75,7 @@ def scheduler():
 
 
 @pytest.fixture(scope='function')
-def bids_form(auction):
+def bids_form(auction, db):
     form = BidsForm()
     auction.prepare_auction_document()
     form.document = auction.auction_document
