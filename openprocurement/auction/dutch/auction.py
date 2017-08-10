@@ -9,12 +9,8 @@ from gevent import sleep
 from apscheduler.schedulers.gevent import GeventScheduler
 from couchdb import Database, Session
 from yaml import safe_dump as yaml_dump
-from copy import deepcopy
 from datetime import datetime
 from dateutil.tz import tzlocal
-from barbecue import cooking
-from contextlib import contextmanager
-from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.dutch.server import run_server
 from openprocurement.auction.worker.mixins import (
@@ -32,27 +28,16 @@ from openprocurement.auction.dutch.constants import (
     SEALEDBID,
     BESTBID
 )
-from openprocurement.auction.dutch.forms import BidsForm, form_handler
 from openprocurement.auction.dutch.journal import (
-    AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE,
-    AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND,
-    AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,
-    AUCTION_WORKER_SERVICE_AUCTION_CANCELED,
     AUCTION_WORKER_SERVICE_END_AUCTION,
-    AUCTION_WORKER_SERVICE_START_AUCTION,
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,
     AUCTION_WORKER_SERVICE_PREPARE_SERVER,
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
-from openprocurement.auction.worker.utils import prepare_results_stage
-
-from openprocurement.auction.dutch.utils import \
-    generate_request_id, prepare_audit,\
+from openprocurement.auction.dutch.utils import prepare_audit,\
     update_auction_document, lock_bids
-from openprocurement.auction.utils import (
-    get_latest_bid_for_bidder, sorting_by_amount,
-    sorting_start_bids_by_amount, delete_mapping
-)
+from openprocurement.auction.utils import delete_mapping
+
 
 LOGGER = logging.getLogger('Auction Worker')
 SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
@@ -112,6 +97,7 @@ class Auction(DutchDBServiceMixin,
         #     self.requests_queue = Queue()
         # else:
         #     self.requests_queue = Queue(REQUEST_QUEUE_SIZE)
+
     def approve_dutch_winner(self, bid):
         stage = self.auction_document['current_stage']
         self.auction_document['stages'][stage].update({
@@ -254,7 +240,7 @@ class Auction(DutchDBServiceMixin,
             SCHEDULER.add_job(
                 func,
                 'date',
-                args = (stage,),
+                args=(stage,),
                 run_date=self.convert_datetime(
                     self.auction_document['stages'][index]['start']
                 ),
