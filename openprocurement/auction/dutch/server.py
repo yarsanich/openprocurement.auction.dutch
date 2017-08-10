@@ -10,6 +10,7 @@ from gevent import socket
 import errno
 from datetime import datetime, timedelta
 from pytz import timezone
+from openprocurement.auction.worker.server import _LoggerStream, AuctionsWSGIHandler
 from openprocurement.auction.dutch.forms import BidsForm, form_handler
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
@@ -32,69 +33,40 @@ app.logins_cache = {}
 INVALIDATE_GRANT = timedelta(0, 230)
 
 
-class _LoggerStream(object):
-    """
-    Logging workaround for Gevent PyWSGI Server
-    """
-    def __init__(self, logger):
-        super(_LoggerStream, self).__init__()
-        self.logger = logger
-
-    def write(self, msg, **kw):
-        self.logger.info(msg, **kw)
-
-
-class AuctionsWSGIHandler(WSGIHandler):
-
-    def run_application(self):
-        try:
-            return super(AuctionsWSGIHandler, self).run_application()
-        except socket.error as ex:
-            if ex.args[0] in (errno.EPIPE, errno.ECONNRESET):
-                self.close_connection = True
-            else:
-                raise ex
-
-    def log_request(self):
-        log = self.server.log
-        if log:
-            extra = prepare_extra_journal_fields(self.headers)
-            real_ip = self.environ.get('HTTP_X_REAL_IP', '')
-            if real_ip.startswith('172.'):
-                real_ip = ''
-            extra['JOURNAL_REMOTE_ADDR'] = ','.join(
-                [self.environ.get('HTTP_X_FORWARDED_FOR', ''), real_ip]
-            )
-            extra['JOURNAL_USER_AGENT'] = self.environ.get('HTTP_USER_AGENT', '')
-
-            log.write(self.format_request(), extra=extra)
-
-
 @app.route('/login')
 def login():
+
     if 'bidder_id' in request.args and 'hash' in request.args:
-        for bidder_info in app.config['auction'].bidders_data:
-            if bidder_info['id'] == request.args['bidder_id']:
-                next_url = request.args.get('next') or request.referrer or None
-                if 'X-Forwarded-Path' in request.headers:
-                    callback_url = urljoin(
-                        request.headers['X-Forwarded-Path'],
-                        'authorized'
-                    )
-                else:
-                    callback_url = url_for('authorized', next=next_url, _external=True)
-                response = app.remote_oauth.authorize(
-                    callback=callback_url,
-                    bidder_id=request.args['bidder_id'],
-                    hash=request.args['hash']
-                )
-                if 'return_url' in request.args:
-                    session['return_url'] = request.args['return_url']
-                session['login_bidder_id'] = request.args['bidder_id']
-                session['login_hash'] = request.args['hash']
-                session['login_callback'] = callback_url
-                app.logger.debug("Session: {}".format(repr(session)))
-                return response
+        # TODO: no preknown bidders in dutch auction
+        next_url = request.args.get('next') or request.referrer or None
+        if 'X-Forwarded-Path' in request.headers:
+            callback_url = urljoin(
+                request.headers['X-Forwarded-Path'],
+                'authorized'
+            )
+        else:
+            callback_url = url_for('authorized', next=next_url, _external=True)
+
+        # TODO: fix me
+        bidder_id = request.args.get('bidder_id', '')
+        authorize_hash = request.args.get('hash', '')
+        
+        response = app.remote_oauth.authorize(
+            callback=callback_url,
+            bidder_id=bidder_id,
+            hash=authorize_hash
+        )
+        app.config['auction'].bidders_data.append({
+            'id': bidder_id,
+            'date': ''
+        })
+        if 'return_url' in request.args:
+            session['return_url'] = request.args['return_url']
+        session['login_bidder_id'] = request.args['bidder_id']
+        session['login_hash'] = request.args['hash']
+        session['login_callback'] = callback_url
+        app.logger.debug("Session: {}".format(repr(session)))
+        return response
     return abort(401)
 
 
@@ -225,6 +197,7 @@ def run_server(auction, mapping_expire_time, logger,
     app.logger_name = logger.name
     app._logger = logger
     app.config['auction'] = auction
+
     app.config['timezone'] = tz(timezone)
     app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(cookie_path, auction.auction_doc_id)
     app.config['SESSION_COOKIE_NAME'] = 'auction_session'
@@ -267,7 +240,9 @@ def run_server(auction, mapping_expire_time, logger,
         mapping_value,
         mapping_expire_time
     ), extra={"JOURNAL_REQUEST_ID": auction.request_id})
-
+    logger.fatal("bidders data {}".format(
+        app.config['auction'].bidders_data
+    ))
     # Spawn events functionality
     spawn(push_timestamps_events, app,)
     spawn(check_clients, app, )
