@@ -22,7 +22,6 @@ def main():
     parser.add_argument('--auction_info', type=str, help='Auction File')
     parser.add_argument('--auction_info_from_db', type=str, help='Get auction data from local database')
     parser.add_argument('--with_api_version', type=str, help='Tender Api Version')
-    parser.add_argument('--lot', type=str, help='Specify lot in tender', default=None)
     parser.add_argument('--planning_procerude', type=str, help='Override planning procerude',
                         default=None, choices=[None, C.PLANNING_FULL, C.PLANNING_PARTIAL_DB, C.PLANNING_PARTIAL_CRON])
 
@@ -34,8 +33,6 @@ def main():
             worker_defaults['TENDERS_API_VERSION'] = args.with_api_version
         if args.cmd != 'cleanup':
             worker_defaults['handlers']['journal']['TENDER_ID'] = args.auction_doc_id
-            if args.lot:
-                worker_defaults['handlers']['journal']['TENDER_LOT_ID'] = args.lot
         for key in ('TENDERS_API_VERSION', 'TENDERS_API_URL',):
             worker_defaults['handlers']['journal'][key] = worker_defaults[key]
 
@@ -53,8 +50,7 @@ def main():
 
     auction = Auction(args.auction_doc_id,
                       worker_defaults=worker_defaults,
-                      auction_data=auction_data,
-                      lot_id=args.lot)
+                      auction_data=auction_data)
     if args.cmd == 'run':
         SCHEDULER.start()
         auction.schedule_auction()
