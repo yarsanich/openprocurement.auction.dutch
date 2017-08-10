@@ -2,11 +2,65 @@
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 
-from openprocurement.auction.utils import get_tender_data, generate_request_id as _request_id
+from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.dutch.constants import DUTCH_TIMEDELTA,\
-    DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES, DUTCH_DOWN_STEP, FIRST_PAUSE
+    DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
+    DUTCH_DOWN_STEP, FIRST_PAUSE, FIRST_PAUSE_SECONDS, LAST_PAUSE_SECONDS,\
+    DUTCH, SEALEDBID, BESTBID
 
+
+def prepare_sealedbid_stage(auction):
+    """TODO: """
+    return []
+
+
+def prepare_bestbid_stage(auction):
+    """TODO: """
+    return []
+
+
+def calculate_dutch_value(value):
+    if not isinstance(value, Decimal):
+        value = Decimal(value)
+    return value * DUTCH_DOWN_STEP
+
+# def prepare_stages(auction):
+#     stages = {
+#         DUTCH: [],
+#         SEALEDBID: [],
+#         BESTBID: []
+#     }
+#     next_stage_date = auction.startDate
+#     stages[DUTCH].append({
+#         'type': 'pause',
+#         'start': next_stage_date.isoformat()
+#     })
+#     next_stage_date += FIRST_PAUSE_SECONDS
+#     value = auction.initial_value
+#     for _ in range(DUTCH_ROUNDS):
+#         dutch_stage = {
+#             'start': next_stage_date.isoformat(),
+#             'amount': value,
+#             'bidder_id': '',
+#             'time': '',
+#             'type': 'round'
+#         }
+#         value = calculate_dutch_value(value)
+#         next_stage_date += DUTCH_TIMEDELTA
+#     next_stage_date += LAST_PAUSE_SECONDS
+#     stages[DUTCH].append({
+#         'type': 'pause',
+#         'start': next_stage_date.isoformat(),
+#     })
+
+#     stages[SEALEDBID].extend(
+#         prepare_sealedbid_stage(auction)
+#     )
+#     stages[BESTBID].extend(
+#         prepare_bestbid_stage(auction)
+#     )
+#     return stages
 
 
 @contextmanager
@@ -55,23 +109,6 @@ def prepare_dutch_stages(auction):
     return stages
 
 
-def update_current_value(auction, index):
-    if not hasattr(auction, 'dutch_values'):
-        aution.dutch_values = calculate_dutch_values(auctoin)
-
-    try:
-        current_value = auction.dutch_values[index]
-    except IndexError as e:
-        # TODO
-        return False
-    auction.current_value = current_value
-    # TODO: Notify clients
-    # send_events_to_clients(
-    #     'DutchStep',
-    # )
-    return True
-
-
 def prepare_best_bid_stage(auction):
     """TODO:"""
 
@@ -87,17 +124,22 @@ def prepare_audit(auction):
         "auctionId": auction_data["data"].get("auctionID", ""),
         "auction_id": auction.tender_id,
         "items": auction_data["data"].get("items", []),
+        "results": {
+            DUTCH: {},
+            SEALEDBID: {},
+            BESTBID: {},
+        },
         "timeline": {
             "auction_start": {},
             'stages': {
-                'dutch': {
+                DUTCH: {
                     'timeline': {
                         'start': '',
                         'end': ''
                     }
                 },
-                'sealedbid': {},
-                'bestbid': {},
+                SEALEDBID: {},
+                BESTBID: {},
             }
         }
     }
@@ -123,11 +165,16 @@ def prepare_auction_document(auction):
         "_id": auction.auction_doc_id,
         "stages": [],
         "tenderID": auction._auction_data["data"].get("tenderID", ""),
-        "procurementMethodType": auction._auction_data["data"].get("procurementMethodType", "default"),
+        "procurementMethodType": auction._auction_data["data"].get(
+            "procurementMethodType", "default"),
         "TENDERS_API_VERSION": auction.worker_defaults["TENDERS_API_VERSION"],
         "current_stage": -1,
         "current_phase": 'pre-staring',
-        "results": [],
+        "results": {
+            DUTCH: {},
+            SEALEDBID: {},
+            BESTBID: {}
+        },
         "procuringEntity": auction._auction_data["data"].get("procuringEntity", {}),
         "items": auction._auction_data["data"].get("items", []),
         "value": auction._auction_data["data"].get("value", {}),
