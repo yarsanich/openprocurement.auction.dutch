@@ -1,17 +1,21 @@
-from flask_oauthlib.client import OAuth
-from flask import Flask, request, jsonify, url_for, session, abort, redirect
 import os
-from urlparse import urljoin
 import iso8601
+
+from urlparse import urljoin
+from flask_oauthlib.client import OAuth
+from flask import Flask, request, jsonify,\
+    url_for, session, abort, redirect
+
+from gevent.pywsgi import WSGIServer
+from gevent import spawn
+
+from datetime import datetime
+from pytz import timezone as tz
 from dateutil.tz import tzlocal
 
-from gevent.pywsgi import WSGIServer, WSGIHandler
-from gevent import socket
-import errno
-from datetime import datetime, timedelta
-from pytz import timezone
 from openprocurement.auction.worker.server import _LoggerStream, AuctionsWSGIHandler
 from openprocurement.auction.dutch.forms import BidsForm, form_handler
+from openprocurement.auction.dutch.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
     prepare_extra_journal_fields, get_bidder_id
@@ -20,9 +24,6 @@ from openprocurement.auction.event_source import (
     push_timestamps_events, check_clients
 )
 
-from pytz import timezone as tz
-from gevent import spawn
-
 
 app = Flask(__name__)
 app.auction_bidders = {}
@@ -30,12 +31,9 @@ app.register_blueprint(sse)
 app.secret_key = os.urandom(24)
 app.logins_cache = {}
 
-INVALIDATE_GRANT = timedelta(0, 230)
-
 
 @app.route('/login')
 def login():
-
     if 'bidder_id' in request.args and 'hash' in request.args:
         # TODO: no preknown bidders in dutch auction
         next_url = request.args.get('next') or request.referrer or None
@@ -50,7 +48,7 @@ def login():
         # TODO: fix me
         bidder_id = request.args.get('bidder_id', '')
         authorize_hash = request.args.get('hash', '')
-        
+
         response = app.remote_oauth.authorize(
             callback=callback_url,
             bidder_id=bidder_id,
@@ -157,10 +155,11 @@ def logout():
     )
 
 
-
 @app.route('/postbid', methods=['POST'])
 def post_bid():
-    if 'remote_oauth' in session and 'client_id' in session:
+    if app.config['auction'].debug:
+        return jsonify(app.form_handler())
+    elif 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
         if bidder_data and bidder_data['bidder_id'] == request.json['bidder_id']:
             return jsonify(app.form_handler())
