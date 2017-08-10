@@ -22,10 +22,8 @@ from openprocurement.auction.worker.mixins import (
     DateTimeServiceMixin, TIMEZONE
 )
 from openprocurement.auction.dutch.server import send_event
-from openprocurement.auction.dutch.mixins import (
-    DutchDBServiceMixin, DutchStagesMixin,
-    DutchPostAuctionMixin, BiddersServiceMixin, ROUNDS, OPClient
-)
+from openprocurement.auction.dutch.mixins import DutchDBServiceMixin,\
+    DutchPostAuctionMixin
 from openprocurement.auction.dutch.constants import (
     REQUEST_QUEUE_SIZE,
     REQUEST_QUEUE_TIMEOUT,
@@ -65,15 +63,11 @@ SCHEDULER.timezone = TIMEZONE
 END_DUTCH_PAUSE = 20
 
 
-class Auction(
-        OPClient,
-        DutchDBServiceMixin,
-        AuditServiceMixin,
-        BiddersServiceMixin,
-        DateTimeServiceMixin,
-        RequestIDServiceMixin,
-        DutchStagesMixin,
-        DutchPostAuctionMixin):
+class Auction(DutchDBServiceMixin,
+              AuditServiceMixin,
+              DateTimeServiceMixin,
+              RequestIDServiceMixin,
+              DutchPostAuctionMixin):
     """Dutch Auction Worker Class"""
 
     def __init__(self, tender_id,
@@ -250,6 +244,8 @@ class Auction(
                 name = 'End of dutch stage: [{} -> {}]'.format(index - 1, index)
                 id = 'auction:dutch-{}'.format(index)
                 func = self.next_stage
+            elif stage['type'].startswith('sealedbid'):
+                func = self.app
             elif stage['type'] == 'pre-sealed':
                 name = 'End of dutch phase'
                 id = 'auction:pre-sealed'
