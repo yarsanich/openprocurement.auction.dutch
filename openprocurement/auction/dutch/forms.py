@@ -32,7 +32,6 @@ def validate_bid_value(form, field):
                 current_amount = Decimal(str(current_amount))
             if current_amount != field.data:
                 message = u"Passed value doesn't match current amount={}".format(current_amount)
-                # form[field.name].errors.append(message)
                 raise ValidationError(message)
             return True
         except KeyError as e:
@@ -41,12 +40,12 @@ def validate_bid_value(form, field):
     elif phase == BESTBID:
         # TODO: one percent step validation
         pass
-    else:
+    elif phase == SEALEDBID:
         if field.data <= 0.0 and field.data != -1:
             message = u'To low value'
             form[field.name].errors.append(message)
             raise ValidationError(message)
-        dutch_winner_value = form.auction_document['results'].get(DUTCH, {}).get('value')
+        dutch_winner_value = form.document['results'][DUTCH].get('amount')
 
         if not isinstance(dutch_winner_value, Decimal):
             dutch_winner_value = Decimal(str(dutch_winner_value))
@@ -54,6 +53,13 @@ def validate_bid_value(form, field):
             message = u'Bid value can\'t be less or equal current amount'
             form[field.name].errors.append(message)
             raise ValidationError(message)
+        return True
+    elif phase.startswith('pre'):
+        raise ValidationError('Not allowed to post bid on current phase {}'.format(
+            phase
+        ))
+    else:
+        raise ValidationError("Unknown error")
     return True
 
 
@@ -70,6 +76,15 @@ def validate_bidder_id(form, field):
         except KeyError as e:
             form[field.name].errors.append(e)
             raise e
+    elif phase == SEALEDBID:
+        dutch_winner = getattr(form.auction, 'dutch_winner', {})
+        if dutch_winner.get('id') == field.data:
+            message = u'Not allowd to post bid for dutch winner'
+            form[field.name].error.append(message)
+            raise ValidationError(message)
+        if form.data['bidder_id'] in form.auction._bids_data and field.data != -1:
+            raise ValidationError("You've already passed a value")
+        return True
     elif phase.startswith('pre'):
         raise ValidationError('Not allowed to post bid on current phase {}'.format(
             phase
@@ -127,7 +142,7 @@ def form_handler():
     if current_phase == DUTCH:
         with lock_bids(auction):
             ok = auction.add_dutch_winner({
-                'amount': document['stages'][document['current_stage']]['amount'],
+                'amount': str(form.data['bid']),
                 'time': current_time.isoformat(),
                 'bidder_id': form.data['bidder_id']
             })
@@ -154,7 +169,15 @@ def form_handler():
                 return {"status": "failed", "errors": [repr(ok)]}
 
     elif current_phase == SEALEDBID:
-        pass
+        try:
+            auction.bids_queue.put({
+                'amount': str(form.data['bid']),
+                'time': current_time.isoformat(),
+                'bidder_id': form.data['bidder_id']
+            })
+            return {"status": "ok", "data": form.data}
+        except Exception as e:
+            return {"status": "failed", "errors": [repr(e)]}
         # auction.requests_queue.put(request)
         # try:
         #     form_result = _process_form(form)

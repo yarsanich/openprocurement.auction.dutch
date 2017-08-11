@@ -2,6 +2,11 @@ import logging
 import sys
 
 from copy import deepcopy
+from datetime import datetime
+from dateutil.tz import tzlocal
+from gevent import spawn, sleep
+from gevent.event import Event
+from gevent.queue import Queue
 
 from openprocurement.auction.utils import get_tender_data
 from openprocurement.auction.worker.mixins import DBServiceMixin, PostAuctionServiceMixin
@@ -9,8 +14,10 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_CANCEL,
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,
     AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED,
+    AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
 from openprocurement.auction.dutch import utils as simple
+from openprocurement.auction.dutch.constants import DUTCH, SEALEDBID
 
 
 LOGGER = logging.getLogger("Auction Worker")
@@ -28,12 +35,14 @@ class DutchDBServiceMixin(DBServiceMixin):
                 )
             else:
                 self._auction_data = {'data': {}}
+
             auction_data = get_tender_data(
                 self.tender_url + '/auction',
                 user=self.worker_defaults["TENDERS_API_TOKEN"],
                 request_id=self.request_id,
                 session=self.session
             )
+
             if auction_data:
                 self._auction_data['data'].update(auction_data['data'])
                 self.startDate = self.convert_datetime(self._auction_data['data']['auctionPeriod']['startDate'])
@@ -126,3 +135,131 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
         self.generate_request_id()
         with simple.update_auction_document(self):
             simple.announce_results_data(self, None)
+
+
+class DutchAuctionPhase(object):
+    
+    def next_stage(self, stage):
+
+        with simple.lock_bids(self), simple.update_auction_document(self):
+            current_stage = self.auction_document['current_stage'] + 1
+            self.auction_document['current_stage'] = current_stage
+            if stage['type'].startswith(DUTCH):
+                LOGGER.info(
+                    '---------------- SWITCH DUTCH VALUE ----------------'
+                )
+                run_time = datetime.now(tzlocal()).isoformat()
+                self.auction_document['stages'][current_stage]['time']\
+                    = run_time
+                if self.auction_document['current_stage'] == 1:
+                    self.auction_document['current_phase'] = DUTCH
+                    self.audit['timeline']['stages'][DUTCH]['timeline']['start']\
+                        = run_time
+                else:
+                    self.auction_document['stages'][current_stage - 1].update({
+                        'passed': True
+                    })
+
+                old = getattr(self, 'current_value')
+                self.current_value = stage['amount']
+                LOGGER.info('Switched dutch phase value from {} to {}'.format(old, self.current_value))
+
+
+                self.audit['timeline']['stages'][DUTCH]['turn_{}'.format(self.auction_document['current_stage'])] = {
+                    'amount': self.current_value,
+                    'time': run_time,
+                }
+
+            else:
+                self.end_dutch()
+
+    def approve_dutch_winner(self, bid):
+        stage = self.auction_document['current_stage']
+        self.auction_document['stages'][stage].update({
+            "changed": True,
+            "bid": bid['bidder_id'],
+        })
+        self.auction_document['results'][DUTCH] = bid
+        return True
+
+    def approve_audit_info_on_dutch_winner(self):
+        dutch_winner = self.auction_document['results'][DUTCH]
+        self.audit['results'][DUTCH] = dutch_winner
+
+    def add_dutch_winner(self, bid):
+        with simple.update_auction_document(self):
+            LOGGER.info(
+                '---------------- Adding dutch winner  ----------------',
+                extra={"JOURNAL_REQUEST_ID": self.request_id,
+                       "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_FIRST_PAUSE}
+            )
+
+            try:
+                if self.approve_dutch_winner(bid):
+                    LOGGER.info('Approved dutch winner')
+                    self.approve_audit_info_on_dutch_winner()
+                    self.end_dutch()
+                    if not self.debug:
+                        simple.post_dutch_results(self)
+                    return True
+
+            except Exception as e:
+                LOGGER.fatal("Exception during initialization dutch winner. Error: {}".format(e))
+                return e
+
+    def end_dutch(self):
+        LOGGER.info(
+            '---------------- End dutch phase ----------------',
+        )
+        self.audit['timeline']['stages'][DUTCH]['timeline']['end']\
+            = datetime.now(tzlocal()).isoformat()
+        spawn(self.clean_up_preplanned_jobs)
+
+        if not self.auction_document['results'].get(DUTCH, None):
+            LOGGER.info("No bids on dutch phase. End auction now.")
+            self.end_auction()
+            return
+        self.auction_document['current_phase'] = PRESEALEDBID
+
+
+class SealedBidAuctionPhase(object):
+
+    def add_bid(self):
+        LOGGER.info("Started bids worker")
+        while True:
+            if self.bids_queue.empty() and self._end_sealedbid.is_set():
+                break
+            bid = self.bids_queue.get()
+            if bid:
+                LOGGER.info("Adding bid {bidder_id} with value {amount} on {time}".format(
+                    **bid
+                ))
+                self._bids_data[bid['bidder_id']] = bid
+            sleep(0.1)
+        
+    def switch_to_sealedbid(self, stage):
+        with simple.lock_bids(self), simple.update_auction_document(self):
+            self._end_sealedbid = Event()
+            run_time = simple.update_stage(self)
+            self.auction_document['current_phase'] = SEALEDBID
+            self.audit['timeline']['stages'][SEALEDBID]['timeline'] = {
+                'start': run_time
+            }
+            spawn(self.add_bid)
+            LOGGER.info("Swithed auction to {} phase".format(SEALEDBID))
+
+    def end_sealedbid(self, stage):
+        with simple.update_auction_document(self):
+            self.auction_document['current_stage'] += 1
+
+            self.audit['timeline']['stages'][SEALEDBID]['timeline']['end']\
+                = run_time
+            for k, v in self._bids_data.items():
+
+class BestBidAuctionPhase(object):
+
+    def switch_to_bestbid(self, stage):
+        pass
+
+    def end_bestbid(self, stage):
+        self.end_auction()

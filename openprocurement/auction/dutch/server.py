@@ -242,6 +242,7 @@ def run_server(auction, mapping_expire_time, logger,
     logger.fatal("bidders data {}".format(
         app.config['auction'].bidders_data
     ))
+
     # Spawn events functionality
     spawn(push_timestamps_events, app,)
     spawn(check_clients, app, )

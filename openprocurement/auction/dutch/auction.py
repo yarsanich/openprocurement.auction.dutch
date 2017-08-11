@@ -1,8 +1,8 @@
 import logging
-
 from requests import Session as RequestsSession
 from urlparse import urljoin
 from gevent import spawn
+from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
 from gevent import sleep
@@ -19,14 +19,19 @@ from openprocurement.auction.worker.mixins import (
 )
 from openprocurement.auction.dutch.server import send_event
 from openprocurement.auction.dutch.mixins import DutchDBServiceMixin,\
-    DutchPostAuctionMixin
+    DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
+    BestBidAuctionPhase
 from openprocurement.auction.dutch.constants import (
     REQUEST_QUEUE_SIZE,
     REQUEST_QUEUE_TIMEOUT,
     DUTCH_ROUNDS,
+    PRESTARTED,
     DUTCH,
+    PRESEALEDBID,
     SEALEDBID,
-    BESTBID
+    PREBESTBID,
+    BESTBID,
+    END
 )
 from openprocurement.auction.dutch.journal import (
     AUCTION_WORKER_SERVICE_END_AUCTION,
@@ -52,8 +57,11 @@ class Auction(DutchDBServiceMixin,
               AuditServiceMixin,
               DateTimeServiceMixin,
               RequestIDServiceMixin,
+              DutchAuctionPhase,
+              SealedBidAuctionPhase,
+              BestBidAuctionPhase,
               DutchPostAuctionMixin):
-    """Dutch Auction Worker Class"""
+    """ Dutch Auction Worker Class """
 
     def __init__(self, tender_id,
                  worker_defaults={},
@@ -88,52 +96,16 @@ class Auction(DutchDBServiceMixin,
         self.ends = {
             DUTCH: Event()
         }
+        self._bids_data = {}
         LOGGER.info(self.debug)
         # auction phases controllers
 
         # Configuration for SealedBids phase
         self.has_critical_error = False
-        # if REQUEST_QUEUE_SIZE == -1:
-        #     self.requests_queue = Queue()
-        # else:
-        #     self.requests_queue = Queue(REQUEST_QUEUE_SIZE)
-
-    def approve_dutch_winner(self, bid):
-        stage = self.auction_document['current_stage']
-        self.auction_document['stages'][stage].update({
-            "changed": True,
-            "bid": bid['bidder_id'],
-        })
-        self.auction_document['results'][DUTCH] = bid
-        return True
-
-    def approve_audit_info_on_dutch_winner(self):
-        dutch_winner = self.auction_document['results'][DUTCH]
-        self.audit['results'][DUTCH] = dutch_winner
-
-    def add_dutch_winner(self, bid):
-        with update_auction_document(self):
-            LOGGER.info(
-                '---------------- Adding dutch winner  ----------------',
-                extra={"JOURNAL_REQUEST_ID": self.request_id,
-                       "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_FIRST_PAUSE}
-            )
-
-            try:
-                if self.approve_dutch_winner(bid):
-                    LOGGER.info('Approved dutch winner')
-                    self.approve_audit_info_on_dutch_winner()
-                    self.end_dutch()
-                    if not self.debug:
-                        post_dutch_results(self)
-                    return True
-                    # TODO: end this functionality
-                    # if post_dutch_results(self):
-                    #     self.ends[DUTCH].set()
-                    #     return True
-            except Exception as e:
-                LOGGER.fatal("Exception during initialization dutch winner. Error: {}".format(e))
-                return e
+        if REQUEST_QUEUE_SIZE == -1:
+            self.bids_queue = Queue()
+        else:
+            self.bids_queue = Queue(REQUEST_QUEUE_SIZE)
 
     def start_auction(self):
         self.generate_request_id()
@@ -150,58 +122,10 @@ class Auction(DutchDBServiceMixin,
             LOGGER.info("Switched current stage to {}".format(self.auction_document['current_stage']))
             self.current_value = self.auction_document['initial_value']
             LOGGER.info("Initial value {}".format(self.current_value))
-            self.auction_document['current_phase'] = DUTCH
-
-    def prepare_sealed_phase(self):
-        self.end_auction()
 
     @property
     def bidders_count(self):
         return len(self.bidders_data)
-
-    def next_stage(self, stage):
-
-        with lock_bids(self):
-            self.auction_document['current_stage'] += 1
-            if stage['type'].startswith(DUTCH):
-                LOGGER.info(
-                    '---------------- SWITCH DUTCH VALUE ----------------'
-                )
-                old = getattr(self, 'current_value')
-                self.current_value = stage['amount']
-                LOGGER.info('Switched dutch phase value from {} to {}'.format(old, self.current_value))
-                run_time = datetime.now(tzlocal()).isoformat()
-                if self.auction_document['current_stage'] == 1:
-                    self.audit['timeline']['stages'][DUTCH]['timeline']['start']\
-                        = run_time
-                self.audit['timeline']['stages'][DUTCH]['turn_{}'.format(self.auction_document['current_stage'])] = {
-                    'amount': self.current_value,
-                    'time': run_time,
-                }
-                stage['time'] = run_time
-                for bidder_id in getattr(self.server.application, 'auction_bidders', []):
-                    send_event(bidder_id, {"stage": self.auction_document['current_stage']}, 'StageSwitch')
-            else:
-                self.end_dutch()
-
-    def clean_up_preplanned_jobs(self):
-        jobs = SCHEDULER.get_jobs()
-        for job in [j for j in jobs if j.id.startswith('auction:{}'.format(DUTCH))]:
-            LOGGER.warn('Removing job id={}'.format(job.id))
-            job.remove()
-
-    def end_dutch(self):
-        LOGGER.info(
-            '---------------- End dutch phase ----------------',
-        )
-        self.audit['timeline']['stages'][DUTCH]['timeline']['end']\
-            = datetime.now(tzlocal()).isoformat()
-        spawn(self.clean_up_preplanned_jobs)
-        if not self.auction_document['results'].get(DUTCH, None):
-            LOGGER.info("No bids on dutch phase. End auction now.")
-            self.end_auction()
-        else:
-            spawn(self.prepare_sealed_phase)
 
     def schedule_auction(self):
         self.generate_request_id()
@@ -228,14 +152,28 @@ class Auction(DutchDBServiceMixin,
         for index, stage in enumerate(self.auction_document['stages'][1:], 1):
             if stage['type'].startswith(DUTCH):
                 name = 'End of dutch stage: [{} -> {}]'.format(index - 1, index)
-                id = 'auction:dutch-{}'.format(index)
+                id = 'auction:{}-{}'.format(DUTCH, index)
                 func = self.next_stage
-            elif stage['type'].startswith('sealedbid'):
-                func = self.app
-            elif stage['type'] == 'pre-sealed':
+            elif stage['type'] == PRESEALEDBID:
                 name = 'End of dutch phase'
-                id = 'auction:pre-sealed'
-                func = self.next_stage
+                id = 'auction:{}'.format(PRESEALEDBID)
+                func = self.finish_dutch
+            elif stage['type'] == SEALEDBID:
+                name = "Sealedbid phase"
+                func = self.switch_to_sealedbid
+                id = "auction:{}".format(SEALEDBID)
+            elif stage['type'] == PREBESTBID:
+                id = 'auction:{}'.format(PREBESTBID)
+                name = "End of sealedbid phase"
+                func = self.end_sealedbid
+            elif stage['type'] == BESTBID:
+                id = 'auction:{}'.format(BESTBID)
+                name = 'BestBid phase'
+                func = self.switch_to_bestbid
+            elif stage['type'] == END:
+                id = 'auction:{}'.format(END)
+                name = 'End of bestbid phase'
+                func = self.end_bestbid
 
             SCHEDULER.add_job(
                 func,
@@ -256,7 +194,6 @@ class Auction(DutchDBServiceMixin,
                    "MESSAGE_ID": AUCTION_WORKER_SERVICE_PREPARE_SERVER}
         )
         self.server = run_server(self, self.convert_datetime(self.auction_document['stages'][-2]['start']), LOGGER)
-        LOGGER.fatal(self.server.application)
 
     def wait_to_end(self):
         self._end_auction_event.wait()
@@ -264,6 +201,16 @@ class Auction(DutchDBServiceMixin,
             "JOURNAL_REQUEST_ID": self.request_id,
             "MESSAGE_ID": AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER
         })
+                
+    def clean_up_preplanned_jobs(self):
+        jobs = SCHEDULER.get_jobs()
+
+        _f = lambda j: (j.id.startswith('auction:{}'.format(DUTCH)) or j.id.startswith('auction:{}'.format(PRESEALEDBID)))
+        for job in filter(_f, jobs):
+            job.remove()
+
+    def finish_dutch(self, stage):
+        self.end_dutch()
 
     def end_auction(self):
         LOGGER.info(
@@ -292,7 +239,7 @@ class Auction(DutchDBServiceMixin,
         LOGGER.debug(' '.join((
             'Document in end_stage: \n', yaml_dump(dict(self.auction_document))
         )), extra={"JOURNAL_REQUEST_ID": self.request_id})
-        #self.approve_audit_info_on_announcement()
+        # self.approve_audit_info_on_announcement()
         LOGGER.info('Audit data: \n {}'.format(yaml_dump(self.audit)), extra={"JOURNAL_REQUEST_ID": self.request_id})
         if self.debug:
             LOGGER.debug(

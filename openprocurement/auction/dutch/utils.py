@@ -1,66 +1,30 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
+from datetime import timedelta
 
 from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.worker.utils import prepare_service_stage
+from openprocurement.auction.dutch.constants import (
+    PRESTARTED,
+    DUTCH,
+    PRESEALEDBID,
+    SEALEDBID,
+    PREBESTBID,
+    BESTBID,
+    END
+)
 from openprocurement.auction.dutch.constants import DUTCH_TIMEDELTA,\
     DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
     DUTCH_DOWN_STEP, FIRST_PAUSE, FIRST_PAUSE_SECONDS, LAST_PAUSE_SECONDS,\
-    DUTCH, SEALEDBID, BESTBID
-
-
-def prepare_sealedbid_stage(auction):
-    """TODO: """
-    return []
-
-
-def prepare_bestbid_stage(auction):
-    """TODO: """
-    return []
+    DUTCH, SEALEDBID, BESTBID, END_DUTCH_PAUSE, SEALEDBID_TIMEDELTA,\
+    BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
 def calculate_dutch_value(value):
     if not isinstance(value, Decimal):
         value = Decimal(value)
     return value * DUTCH_DOWN_STEP
-
-# def prepare_stages(auction):
-#     stages = {
-#         DUTCH: [],
-#         SEALEDBID: [],
-#         BESTBID: []
-#     }
-#     next_stage_date = auction.startDate
-#     stages[DUTCH].append({
-#         'type': 'pause',
-#         'start': next_stage_date.isoformat()
-#     })
-#     next_stage_date += FIRST_PAUSE_SECONDS
-#     value = auction.initial_value
-#     for _ in range(DUTCH_ROUNDS):
-#         dutch_stage = {
-#             'start': next_stage_date.isoformat(),
-#             'amount': value,
-#             'bidder_id': '',
-#             'time': '',
-#             'type': 'round'
-#         }
-#         value = calculate_dutch_value(value)
-#         next_stage_date += DUTCH_TIMEDELTA
-#     next_stage_date += LAST_PAUSE_SECONDS
-#     stages[DUTCH].append({
-#         'type': 'pause',
-#         'start': next_stage_date.isoformat(),
-#     })
-
-#     stages[SEALEDBID].extend(
-#         prepare_sealedbid_stage(auction)
-#     )
-#     stages[BESTBID].extend(
-#         prepare_bestbid_stage(auction)
-#     )
-#     return stages
 
 
 @contextmanager
@@ -80,41 +44,6 @@ def calculate_next_amount(value):
     if not isinstance(value, Decimal):
         value = Decimal(str(value))
     return (value - (value * DUTCH_DOWN_STEP)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
-
-
-
-def prepare_dutch_stages(auction):
-    dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
-    next_stage_timedelta = auction.startDate
-    amount = auction.auction_document['value']['amount']
-    stages = [prepare_service_stage(
-            start=auction.startDate.isoformat(),
-            type="pause"
-    )]
-    next_stage_timedelta += FIRST_PAUSE
-    for index in range(DUTCH_ROUNDS):
-        stage = {
-            'start': next_stage_timedelta.isoformat(),
-            'amount': amount,
-            'type': 'dutch_{}'.format(index),
-            'time': ''
-        }
-        stages.append(stage)
-        amount = calculate_next_amount(amount)
-        next_stage_timedelta += dutch_step_duration
-    stages.append({
-        'start': next_stage_timedelta.isoformat(),
-        'type': 'pre-sealed',
-    })
-    return stages
-
-
-def prepare_best_bid_stage(auction):
-    """TODO:"""
-
-
-def preapre_sealed_bid_stage(auction):
-    """TODO: """
 
 
 def prepare_audit(auction):
@@ -159,6 +88,13 @@ def lock_bids(auction):
     yield
     auction.bids_actions.release()
 
+
+def update_stage(auction):
+    current_stage = auction.auction_document['current_stage']
+    run_time = datetime.now(tzlocal()).isoformat()
+    auction.auction_document['stages'][current_stage]['time'] = run_time
+    return run_time
+
     
 def prepare_auction_document(auction):
     auction.auction_document.update({
@@ -169,7 +105,7 @@ def prepare_auction_document(auction):
             "procurementMethodType", "default"),
         "TENDERS_API_VERSION": auction.worker_defaults["TENDERS_API_VERSION"],
         "current_stage": -1,
-        "current_phase": 'pre-staring',
+        "current_phase": PRESTARTED,
         "results": {
             DUTCH: {},
             SEALEDBID: {},
@@ -187,8 +123,57 @@ def prepare_auction_document(auction):
             if lang_key in auction._auction_data["data"]:
                 auction.auction_document[lang_key] = auction._auction_data["data"][lang_key]
         auction.auction_document[key] = auction._auction_data["data"].get(key, "")
+    dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
+    next_stage_timedelta = auction.startDate
+    amount = auction.auction_document['value']['amount']
+    auction.auction_document['stages'] = [prepare_service_stage(
+            start=auction.startDate.isoformat(),
+            type="pause"
+    )]
+    next_stage_timedelta += FIRST_PAUSE
+    for index in range(DUTCH_ROUNDS + 1):
+        if index == DUTCH_ROUNDS:
+            stage = {
+            'start': next_stage_timedelta.isoformat(),
+                'type': PRESEALEDBID,
+                'time': ''
+            }
+        else:
+            stage = {
+                'start': next_stage_timedelta.isoformat(),
+                'amount': amount,
+                'type': 'dutch_{}'.format(index),
+                'time': ''
+            }
+        auction.auction_document['stages'].append(stage)
+        amount = calculate_next_amount(amount)
+        if index != DUTCH_ROUNDS:
+            next_stage_timedelta += dutch_step_duration
+            
+    for delta, name in zip(
+            [
+                END_PHASE_PAUSE,
+                SEALEDBID_TIMEDELTA,
+                END_PHASE_PAUSE,
+                BESTBID_TIMEDELTA,
 
-    auction.auction_document['stages'].extend(
-        prepare_dutch_stages(auction)
-    )
+            ],
+            [
+                SEALEDBID,
+                PREBESTBID,
+                BESTBID,
+                END,
+            ]):
+        next_stage_timedelta += delta
+        auction.auction_document['stages'].append({
+            'start': next_stage_timedelta.isoformat(),
+            'type': name,
+            'time': ''
+        })
     return auction.auction_document
+
+
+def post_results_data(auction):
+    # TODO:
+    return True
+    
