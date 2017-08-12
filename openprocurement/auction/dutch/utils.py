@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import timedelta
+from datetime import timedelta, datetime
+from dateutil.tz import tzlocal
 
 from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.worker.utils import prepare_service_stage
@@ -90,6 +91,7 @@ def lock_bids(auction):
 
 
 def update_stage(auction):
+    auction.auction_document['current_stage'] += 1
     current_stage = auction.auction_document['current_stage']
     run_time = datetime.now(tzlocal()).isoformat()
     auction.auction_document['stages'][current_stage]['time'] = run_time
