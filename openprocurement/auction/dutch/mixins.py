@@ -9,7 +9,8 @@ from gevent.event import Event
 from gevent.queue import Queue
 
 from openprocurement.auction.utils import get_tender_data
-from openprocurement.auction.worker.mixins import DBServiceMixin, PostAuctionServiceMixin
+from openprocurement.auction.worker.mixins import DBServiceMixin,\
+    PostAuctionServiceMixin
 from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_CANCEL,
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,
@@ -17,7 +18,8 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
 from openprocurement.auction.dutch import utils as simple
-from openprocurement.auction.dutch.constants import DUTCH, SEALEDBID
+from openprocurement.auction.dutch.constants import DUTCH,\
+    SEALEDBID, PREBESTBID, PRESEALEDBID, END, BESTBID
 
 
 LOGGER = logging.getLogger("Auction Worker")
@@ -250,16 +252,29 @@ class SealedBidAuctionPhase(object):
 
     def end_sealedbid(self, stage):
         with simple.update_auction_document(self):
-            self.auction_document['current_stage'] += 1
-
+            run_time = simple.update_stage(self)
             self.audit['timeline']['stages'][SEALEDBID]['timeline']['end']\
                 = run_time
+            self.auction_document['current_phase'] = PREBESTBID
+
             for k, v in self._bids_data.items():
+                # TODO: prepare bidders data
+                pass
+                
 
 class BestBidAuctionPhase(object):
 
     def switch_to_bestbid(self, stage):
-        pass
+        with simple.lock_bids(self), simple.update_auction_document(self):
+            run_time = simple.update_stage(self)
+            self.auction_document['current_phase'] = BESTBID
+            self.audit['timeline']['stages'][BESTBID]['timeline'] = {
+                'start': run_time
+            }
 
     def end_bestbid(self, stage):
+        with simple.update_auction_document(self):
+            run_time = simple.update_stage(self)
+            self.auction_document['current_phase'] = END
+            self.audit['timeline']['stages'][BESTBID]['timeline']['end'] = run_time
         self.end_auction()
