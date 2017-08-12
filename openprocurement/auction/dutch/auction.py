@@ -120,8 +120,6 @@ class Auction(DutchDBServiceMixin,
         with lock_bids(self), update_auction_document(self):
             self.auction_document["current_stage"] = 0
             LOGGER.info("Switched current stage to {}".format(self.auction_document['current_stage']))
-            self.current_value = self.auction_document['initial_value']
-            LOGGER.info("Initial value {}".format(self.current_value))
 
     @property
     def bidders_count(self):

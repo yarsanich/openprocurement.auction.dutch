@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-# from da
 from flask import request, session, current_app as app
 from decimal import ROUND_HALF_UP, Decimal
 
@@ -11,7 +10,7 @@ import wtforms_json
 
 from openprocurement.auction.utils import prepare_extra_journal_fields
 from openprocurement.auction.dutch.constants import DUTCH, SEALEDBID, BESTBID
-from openprocurement.auction.dutch.utils import lock_bids
+from openprocurement.auction.dutch.utils import lock_bids, get_dutch_winner
 
 
 wtforms_json.init()
@@ -40,8 +39,12 @@ def validate_bid_value(form, field):
             raise e
     elif phase == BESTBID:
         # TODO: one percent step validation
-        dutch_winner_value = form.document['results'][DUTCH].get('amount')
-        if field.data != -1 and (field.data <= dutch_winner_value):
+        winner = get_dutch_winner(form.document)
+        current_amount = winner.get('amount')
+        if not isinstance(current_amount, Decimal):
+            current_amount = Decimal(str(current_amount))
+        app.logger.fatal("DUTCH WINNER: {}".format(current_amount))
+        if field.data != -1 and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
             form[field.name].errors.append(message)
             raise ValidationError(message)
@@ -51,9 +54,10 @@ def validate_bid_value(form, field):
             message = u'To low value'
             form[field.name].errors.append(message)
             raise ValidationError(message)
-        dutch_winner_value = form.document['results'][DUTCH].get('amount')
+        winner = get_dutch_winner(form.document)
+        dutch_winner_value = winner.get('amount')
 
-        LOGGER.info('DUTCH winner amount {}'.format(dutch_winner_value))
+        app.logger.info('DUTCH winner amount {}'.format(dutch_winner_value))
         if not isinstance(dutch_winner_value, Decimal):
             dutch_winner_value = Decimal(str(dutch_winner_value))
         if field.data != -1 and (field.data <= dutch_winner_value):
@@ -62,10 +66,9 @@ def validate_bid_value(form, field):
             raise ValidationError(message)
         return True
     else:
-        raise ValidationError('Not allowed to post bid on current phase {}'.format(
+        raise ValidationError('Not allowed to post bid on current `{}` phase'.format(
             phase
         ))
-        raise ValidationError("Unknown error")
     return True
 
 
@@ -73,7 +76,7 @@ def validate_bidder_id(form, field):
     phase = form.document.get('current_phase')
     if phase == BESTBID:
         try:
-            dutch_winner = form.document['results'].get(DUTCH, {})
+            dutch_winner = get_dutch_winner(form.document)
             if dutch_winner and dutch_winner['bidder_id'] != field.data:
                 message = u'bidder_id don\'t match with dutchWinner.bidder_id'
                 form[field.name].errors.append(message)
@@ -83,7 +86,7 @@ def validate_bidder_id(form, field):
             form[field.name].errors.append(e)
             raise e
     elif phase == SEALEDBID:
-        dutch_winner = form.document['results'].get(DUTCH, {})
+        dutch_winner = get_dutch_winner(form.document)
         if dutch_winner.get('bidder_id') == field.data:
             message = u'Not allowd to post bid for dutch winner'
             form[field.name].errors.append(message)
@@ -131,10 +134,16 @@ def form_handler():
         app.logger.info(
             "Bidder {} with client_id {} wants place bid {} in {}on phase {} "
             "with errors {}".format(
-                request.json.get('bidder_id', 'None'), session.get('client_id', ''),
-                request.json.get('bid', 'None'), current_time.isoformat(),
-                current_phase, repr(form.errors)),
-            extra=prepare_extra_journal_fields(request.headers))
+                request.json.get('bidder_id', 'None'),
+                session.get('client_id', ''),
+                request.json.get('bid', 'None'),
+                current_time.isoformat(),
+                current_phase,
+                repr(form.errors)
+            ), extra=prepare_extra_journal_fields(
+                request.headers
+            )
+        )
         return {'status': 'failed', 'errors': form.errors}
     if current_phase == DUTCH:
         with lock_bids(auction):
@@ -175,6 +184,33 @@ def form_handler():
             return {"status": "ok", "data": form.data}
         except Exception as e:
             return {"status": "failed", "errors": [repr(e)]}
+    elif current_phase == BESTBID:
+        ok = auction.add_bestbid({
+                'amount': str(form.data['bid']),
+                'time': current_time.isoformat(),
+                'bidder_id': form.data['bidder_id']
+        })
+        if not isinstance(ok, Exception):
+            app.logger.info(
+                "Bidder {} with client {} has won dutch on value {}".format(
+                    form.data['bidder_id'],
+                    session.get('client_id'),
+                    form.data['bid']
+                )
+            )
+            return {"status": "ok", "data": form.data}
+        else:
+            app.logger.info(
+                "Bidder {} with client_id {} wants place bid {} in {} on dutch "
+                "with errors {}".format(
+                    request.json.get('bidder_id', 'None'),
+                    session.get('client_id'),
+                    request.json.get('bid', 'None'), current_time.isoformat(),
+                    repr(ok)
+                ),
+                extra=prepare_extra_journal_fields(request.headers)
+            )
+            return {"status": "failed", "errors": [repr(ok)]}
     else:
         return {
             'status': 'failed',

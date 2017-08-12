@@ -8,7 +8,7 @@ from gevent import spawn, sleep
 from gevent.event import Event
 from gevent.queue import Queue
 
-from openprocurement.auction.utils import get_tender_data
+from openprocurement.auction.utils import get_tender_data, sorting_by_amount
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin
 from openprocurement.auction.worker.journal import (
@@ -144,30 +144,30 @@ class DutchAuctionPhase(object):
     def next_stage(self, stage):
 
         with simple.lock_bids(self), simple.update_auction_document(self):
-            current_stage = self.auction_document['current_stage'] + 1
-            self.auction_document['current_stage'] = current_stage
+            run_time = simple.update_stage(self)
+            stage_index = self.auction_document['current_stage']
             if stage['type'].startswith(DUTCH):
                 LOGGER.info(
                     '---------------- SWITCH DUTCH VALUE ----------------'
                 )
-                run_time = datetime.now(tzlocal()).isoformat()
-                self.auction_document['stages'][current_stage]['time']\
+                self.auction_document['stages'][stage_index]['time']\
                     = run_time
-                if self.auction_document['current_stage'] == 1:
+                if stage_index == 1:
                     self.auction_document['current_phase'] = DUTCH
-                    self.audit['timeline']['stages'][DUTCH]['timeline']['start']\
+                    self.audit['timeline'][DUTCH]['timeline']['start']\
                         = run_time
-                else:
-                    self.auction_document['stages'][current_stage - 1].update({
-                        'passed': True
-                    })
+                self.auction_document['stages'][stage_index - 1].update({
+                    'passed': True
+                })
 
-                old = getattr(self, 'current_value')
+                old = self.auction_document['stages'][stage_index - 1].get('amount', '') or\
+                    self.auction_document['initial_value']
                 self.current_value = stage['amount']
-                LOGGER.info('Switched dutch phase value from {} to {}'.format(old, self.current_value))
+                LOGGER.info('Switched dutch phase value from {} to {}'.format(
+                    old, self.current_value)
+                )
 
-
-                self.audit['timeline']['stages'][DUTCH]['turn_{}'.format(self.auction_document['current_stage'])] = {
+                self.audit['timeline'][DUTCH]['turn_{}'.format(stage_index)] = {
                     'amount': self.current_value,
                     'time': run_time,
                 }
@@ -177,23 +177,31 @@ class DutchAuctionPhase(object):
 
     def approve_dutch_winner(self, bid):
         stage = self.auction_document['current_stage']
-        self.auction_document['stages'][stage].update({
-            "changed": True,
-            "bid": bid['bidder_id'],
-        })
-        self.auction_document['results'][DUTCH] = bid
-        return True
+        try:
+            self.auction_document['stages'][stage].update({
+                "changed": True,
+                "bid": bid['bidder_id'],
+            })
+            self.auction_document['results'][DUTCH].append(bid)
+            return True
+        except Exception as e:
+            LOGGER.warn("Unable to post dutch winner. Error: {}".format(
+                e
+            ))
+            return False
 
     def approve_audit_info_on_dutch_winner(self):
-        dutch_winner = self.auction_document['results'][DUTCH]
-        self.audit['results'][DUTCH] = dutch_winner
+        self.audit['timeline'][DUTCH]['bids'] = self.auction_document['results'][DUTCH]
+        self.audit['results'][DUTCH] = self.auction_document['results'][DUTCH]
 
     def add_dutch_winner(self, bid):
         with simple.update_auction_document(self):
             LOGGER.info(
                 '---------------- Adding dutch winner  ----------------',
-                extra={"JOURNAL_REQUEST_ID": self.request_id,
-                       "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_FIRST_PAUSE}
+                extra={
+                    "JOURNAL_REQUEST_ID": self.request_id,
+                    "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
+                }
             )
 
             try:
@@ -213,11 +221,10 @@ class DutchAuctionPhase(object):
         LOGGER.info(
             '---------------- End dutch phase ----------------',
         )
-        self.audit['timeline']['stages'][DUTCH]['timeline']['end']\
+        self.audit['timeline'][DUTCH]['timeline']['end']\
             = datetime.now(tzlocal()).isoformat()
         spawn(self.clean_up_preplanned_jobs)
-
-        if not self.auction_document['results'].get(DUTCH, None):
+        if len(self.auction_document['results'][DUTCH]) == 0:
             LOGGER.info("No bids on dutch phase. End auction now.")
             self.end_auction()
             return
@@ -237,6 +244,7 @@ class SealedBidAuctionPhase(object):
                     **bid
                 ))
                 self._bids_data[bid['bidder_id']] = bid
+                self.audit['timeline'][SEALEDBID]['bids'].append(bid)
             sleep(0.1)
         
     def switch_to_sealedbid(self, stage):
@@ -244,37 +252,60 @@ class SealedBidAuctionPhase(object):
             self._end_sealedbid = Event()
             run_time = simple.update_stage(self)
             self.auction_document['current_phase'] = SEALEDBID
-            self.audit['timeline']['stages'][SEALEDBID]['timeline'] = {
-                'start': run_time
-            }
+            self.audit['timeline'][SEALEDBID]['timeline']['start'] =\
+                run_time
             spawn(self.add_bid)
             LOGGER.info("Swithed auction to {} phase".format(SEALEDBID))
+
+    def approve_audit_info_on_sealedbid(self, run_time):
+        self.audit['timeline'][SEALEDBID]['timeline']['end']\
+            = run_time
+        self.audit['results'][SEALEDBID] = self.auction_document['results'][SEALEDBID]
 
     def end_sealedbid(self, stage):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
-            self.audit['timeline']['stages'][SEALEDBID]['timeline']['end']\
-                = run_time
-            self.auction_document['current_phase'] = PREBESTBID
 
-            for k, v in self._bids_data.items():
-                # TODO: prepare bidders data
-                pass
+            self.auction_document['current_phase'] = PREBESTBID
+            dutch_winner = self.auction_document['results'][DUTCH][0]
+            all_bids = deepcopy(self._bids_data)
+            all_bids[dutch_winner['bidder_id']] = dutch_winner
+            all_bids[dutch_winner['bidder_id']].update({"dutch_winner": True})
+            self.auction_document['results'][SEALEDBID] = sorting_by_amount(
+                all_bids.values()
+            )
+            self.approve_audit_info_on_sealedbid(run_time)
                 
 
 class BestBidAuctionPhase(object):
+
+    def add_bestbid(self, bid):
+        try:
+            LOGGER.info(
+                "Dutch winner id={bidder_id} placed bid {bid} on {time}".format(
+                    **bid
+                )
+            )
+            self._bids_data[bid['bidder_id']].update(bid)
+            return True
+        except Exception as e:
+            LOGGER.info(
+                "Falied to update dutch winner. Error: {}".format(
+                    e
+                )
+            )
+            return e
+        return True
 
     def switch_to_bestbid(self, stage):
         with simple.lock_bids(self), simple.update_auction_document(self):
             run_time = simple.update_stage(self)
             self.auction_document['current_phase'] = BESTBID
-            self.audit['timeline']['stages'][BESTBID]['timeline'] = {
-                'start': run_time
-            }
+            self.audit['timeline'][BESTBID]['timeline']['start'] = run_time
 
     def end_bestbid(self, stage):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
             self.auction_document['current_phase'] = END
-            self.audit['timeline']['stages'][BESTBID]['timeline']['end'] = run_time
+            self.audit['timeline'][BESTBID]['timeline']['end'] = run_time
         self.end_auction()
