@@ -13,6 +13,7 @@ from openprocurement.auction.utils import prepare_extra_journal_fields
 from openprocurement.auction.dutch.constants import DUTCH, SEALEDBID, BESTBID
 from openprocurement.auction.dutch.utils import lock_bids
 
+
 wtforms_json.init()
 
 
@@ -39,7 +40,12 @@ def validate_bid_value(form, field):
             raise e
     elif phase == BESTBID:
         # TODO: one percent step validation
-        pass
+        dutch_winner_value = form.document['results'][DUTCH].get('amount')
+        if field.data != -1 and (field.data <= dutch_winner_value):
+            message = u'Bid value can\'t be less or equal current amount'
+            form[field.name].errors.append(message)
+            raise ValidationError(message)
+        return True
     elif phase == SEALEDBID:
         if field.data <= 0.0 and field.data != -1:
             message = u'To low value'
@@ -47,6 +53,7 @@ def validate_bid_value(form, field):
             raise ValidationError(message)
         dutch_winner_value = form.document['results'][DUTCH].get('amount')
 
+        LOGGER.info('DUTCH winner amount {}'.format(dutch_winner_value))
         if not isinstance(dutch_winner_value, Decimal):
             dutch_winner_value = Decimal(str(dutch_winner_value))
         if field.data != -1 and (field.data <= dutch_winner_value):
@@ -54,11 +61,10 @@ def validate_bid_value(form, field):
             form[field.name].errors.append(message)
             raise ValidationError(message)
         return True
-    elif phase.startswith('pre'):
+    else:
         raise ValidationError('Not allowed to post bid on current phase {}'.format(
             phase
         ))
-    else:
         raise ValidationError("Unknown error")
     return True
 
@@ -67,8 +73,8 @@ def validate_bidder_id(form, field):
     phase = form.document.get('current_phase')
     if phase == BESTBID:
         try:
-            dutch_winner = form.auction_document['results'].get(DUTCH, {})
-            if dutch_winner and dutch_winner['id'] != field.data:
+            dutch_winner = form.document['results'].get(DUTCH, {})
+            if dutch_winner and dutch_winner['bidder_id'] != field.data:
                 message = u'bidder_id don\'t match with dutchWinner.bidder_id'
                 form[field.name].errors.append(message)
                 raise ValidationError(message)
@@ -77,29 +83,20 @@ def validate_bidder_id(form, field):
             form[field.name].errors.append(e)
             raise e
     elif phase == SEALEDBID:
-        dutch_winner = getattr(form.auction, 'dutch_winner', {})
-        if dutch_winner.get('id') == field.data:
+        dutch_winner = form.document['results'].get(DUTCH, {})
+        if dutch_winner.get('bidder_id') == field.data:
             message = u'Not allowd to post bid for dutch winner'
-            form[field.name].error.append(message)
+            form[field.name].errors.append(message)
             raise ValidationError(message)
         if form.data['bidder_id'] in form.auction._bids_data and field.data != -1:
             raise ValidationError("You've already passed a value")
         return True
-    elif phase.startswith('pre'):
-        raise ValidationError('Not allowed to post bid on current phase {}'.format(
+    elif phase == DUTCH:
+        return True
+    else:
+        raise ValidationError("Not allowed to post bid on current `{}` phase".format(
             phase
         ))
-    else:
-        return True
-        # for bidder_data in form.auction.bidders_data:
-        #     if bidder_data['id'] == field.data:
-        #         dutch_winner = getattr(form.auction, 'dutch_winner', {})
-        #         if dutch_winner.get('id') == field.data:
-        #             message = u'Not allowd to post bid for dutch winner'
-        #             form[field.name].error.append(message)
-        #             raise ValidationError(message)
-        #         return True
-        raise ValidationError("Unauthorized bidder id={}".format(field.data))
     raise ValidationError("Unknown error")
 
 
@@ -178,27 +175,6 @@ def form_handler():
             return {"status": "ok", "data": form.data}
         except Exception as e:
             return {"status": "failed", "errors": [repr(e)]}
-        # auction.requests_queue.put(request)
-        # try:
-        #     form_result = _process_form(form)
-        #         if form_result['status'] == 'ok':
-        #             auction.add_bid((
-        #                 form.document['current_stage'],
-        #                 {
-        #                     'amount': form.data['bid'],
-        #                     'bidder_id': form.data['bidder_id'],
-        #                     'time': current_time.isoformat()
-        #                 }
-        #             ))
-        #     except:
-        #         app.logger.critical('Error while processing request')
-        #         form.bid.errors.append('Internal server error')
-        #         form_result = {
-        #             'status': 'failed',
-        #             'errors': form.errors
-        #         }
-        #     auction.requests_queue.get()
-        #     return form_result
     else:
         return {
             'status': 'failed',
