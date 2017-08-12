@@ -6,19 +6,14 @@ from dateutil.tz import tzlocal
 
 from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.worker.utils import prepare_service_stage
-from openprocurement.auction.dutch.constants import (
-    PRESTARTED,
-    DUTCH,
-    PRESEALEDBID,
-    SEALEDBID,
-    PREBESTBID,
-    BESTBID,
-    END
-)
+
+from openprocurement.auction.dutch.constants import PRESTARTED, DUTCH,\
+    PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID,END
+
 from openprocurement.auction.dutch.constants import DUTCH_TIMEDELTA,\
     DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
     DUTCH_DOWN_STEP, FIRST_PAUSE, FIRST_PAUSE_SECONDS, LAST_PAUSE_SECONDS,\
-    DUTCH, SEALEDBID, BESTBID, END_DUTCH_PAUSE, SEALEDBID_TIMEDELTA,\
+    END_DUTCH_PAUSE, SEALEDBID_TIMEDELTA,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
@@ -47,6 +42,16 @@ def calculate_next_amount(value):
     return (value - (value * DUTCH_DOWN_STEP)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
 
+def prepare_timeline_stage():
+    return {
+        'timeline': {
+            'start': '',
+            'end': ''
+        },
+        'bids': []
+    }
+
+
 def prepare_audit(auction):
     auction_data = auction._auction_data
     audit = {
@@ -55,27 +60,24 @@ def prepare_audit(auction):
         "auction_id": auction.tender_id,
         "items": auction_data["data"].get("items", []),
         "results": {
-            DUTCH: {},
-            SEALEDBID: {},
-            BESTBID: {},
+            DUTCH: [],
+            SEALEDBID: [],
+            BESTBID: [],
         },
         "timeline": {
             "auction_start": {},
-            'stages': {
-                DUTCH: {
-                    'timeline': {
-                        'start': '',
-                        'end': ''
-                    }
-                },
-                SEALEDBID: {},
-                BESTBID: {},
-            }
         }
     }
-
+    for phase in (DUTCH, SEALEDBID, BESTBID):
+        audit['timeline'][phase] = prepare_timeline_stage()
     return audit
 
+
+def get_dutch_winner(auction_document):
+    try:
+        return auction_document['results'][DUTCH][0]
+    except Exception:
+        return {}
 
 @contextmanager
 def update_auction_document(auction):
@@ -97,7 +99,7 @@ def update_stage(auction):
     auction.auction_document['stages'][current_stage]['time'] = run_time
     return run_time
 
-    
+
 def prepare_auction_document(auction):
     auction.auction_document.update({
         "_id": auction.auction_doc_id,
@@ -109,9 +111,9 @@ def prepare_auction_document(auction):
         "current_stage": -1,
         "current_phase": PRESTARTED,
         "results": {
-            DUTCH: {},
-            SEALEDBID: {},
-            BESTBID: {}
+            DUTCH: [],
+            SEALEDBID: [],
+            BESTBID: []
         },
         "procuringEntity": auction._auction_data["data"].get("procuringEntity", {}),
         "items": auction._auction_data["data"].get("items", []),
