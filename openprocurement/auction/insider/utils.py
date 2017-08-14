@@ -7,10 +7,10 @@ from dateutil.tz import tzlocal
 from openprocurement.auction.utils import generate_request_id as _request_id
 from openprocurement.auction.worker.utils import prepare_service_stage
 
-from openprocurement.auction.dutch.constants import PRESTARTED, DUTCH,\
+from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
     PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID,END
 
-from openprocurement.auction.dutch.constants import DUTCH_TIMEDELTA,\
+from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
     DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
     DUTCH_DOWN_STEP, FIRST_PAUSE, FIRST_PAUSE_SECONDS, LAST_PAUSE_SECONDS,\
     END_DUTCH_PAUSE, SEALEDBID_TIMEDELTA,\

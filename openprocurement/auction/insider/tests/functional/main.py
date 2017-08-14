@@ -32,11 +32,11 @@ def update_auctionPeriod(path, auction_type):
 
 def run_dutch(tender_file_path, auction_id):
     with update_auctionPeriod(tender_file_path, auction_type='dutch') as auction_file:
-        check_output('{0}/bin/auction_esco planning {1}'
-                     ' {0}/etc/auction_worker_dutch.yaml --planning_procerude partial_db --auction_info {2}'.format(CWD, auction_id, auction_file).split())
+        check_output('{0}/bin/auction_insider planning {1}'
+                     ' {0}/etc/auction_worker_insider.yaml --planning_procerude partial_db --auction_info {2}'.format(CWD, auction_id, auction_file).split())
     sleep(30)
 
 
 def includeme(actions):
-    actions['dutch'] = ({'action': run_dutch, 'suite_dir': PWD},)
-    actions['all'] += actions['dutch']
+    actions['insider'] = ({'action': run_dutch, 'suite_dir': PWD},)
+    actions['all'] += actions['insider']

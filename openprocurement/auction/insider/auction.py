@@ -12,16 +12,15 @@ from yaml import safe_dump as yaml_dump
 from datetime import datetime
 from dateutil.tz import tzlocal
 from openprocurement.auction.executor import AuctionsExecutor
-from openprocurement.auction.dutch.server import run_server
+from openprocurement.auction.insider.server import run_server
 from openprocurement.auction.worker.mixins import (
     RequestIDServiceMixin, AuditServiceMixin,
     DateTimeServiceMixin, TIMEZONE
 )
-from openprocurement.auction.dutch.server import send_event
-from openprocurement.auction.dutch.mixins import DutchDBServiceMixin,\
+from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
     BestBidAuctionPhase
-from openprocurement.auction.dutch.constants import (
+from openprocurement.auction.insider.constants import (
     REQUEST_QUEUE_SIZE,
     REQUEST_QUEUE_TIMEOUT,
     DUTCH_ROUNDS,
@@ -33,13 +32,13 @@ from openprocurement.auction.dutch.constants import (
     BESTBID,
     END
 )
-from openprocurement.auction.dutch.journal import (
+from openprocurement.auction.insider.journal import (
     AUCTION_WORKER_SERVICE_END_AUCTION,
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,
     AUCTION_WORKER_SERVICE_PREPARE_SERVER,
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
-from openprocurement.auction.dutch.utils import prepare_audit,\
+from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids
 from openprocurement.auction.utils import delete_mapping
 

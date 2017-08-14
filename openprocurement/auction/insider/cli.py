@@ -9,7 +9,7 @@ import yaml
 import sys
 import os
 
-from openprocurement.auction.dutch.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.auction import Auction, SCHEDULER
 from openprocurement.auction.worker import constants as C
 
 

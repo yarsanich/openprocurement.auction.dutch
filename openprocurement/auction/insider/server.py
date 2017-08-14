@@ -14,8 +14,8 @@ from pytz import timezone as tz
 from dateutil.tz import tzlocal
 
 from openprocurement.auction.worker.server import _LoggerStream, AuctionsWSGIHandler
-from openprocurement.auction.dutch.forms import BidsForm, form_handler
-from openprocurement.auction.dutch.constants import INVALIDATE_GRANT
+from openprocurement.auction.insider.forms import BidsForm, form_handler
+from openprocurement.auction.insider.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
     prepare_extra_journal_fields, get_bidder_id

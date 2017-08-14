@@ -17,8 +17,8 @@ from openprocurement.auction.worker.journal import (
     AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED,
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 )
-from openprocurement.auction.dutch import utils as simple
-from openprocurement.auction.dutch.constants import DUTCH,\
+from openprocurement.auction.insider import utils as simple
+from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, END, BESTBID
 
 
@@ -118,7 +118,6 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
 
         if results:
             bids_information = simple.announce_results_data(self, results)
-
             if doc_id and bids_information:
                 # self.approve_audit_info_on_announcement(approved=bids_information)
                 if self.worker_defaults.get('with_document_service', False):
@@ -203,7 +202,6 @@ class DutchAuctionPhase(object):
                     "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
                 }
             )
-
             try:
                 if self.approve_dutch_winner(bid):
                     LOGGER.info('Approved dutch winner')
@@ -267,7 +265,13 @@ class SealedBidAuctionPhase(object):
     def end_sealedbid(self, stage):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
-
+            self._end_sealedbid.set()
+            while not self.bids_queue.empty():
+                LOGGER.info(
+                    "Waiting for bids to process"
+                )
+                gevent.sleep(0.1)
+            LOGGER.info("Done processing bids queue")
             self.auction_document['current_phase'] = PREBESTBID
             dutch_winner = self.auction_document['results'][DUTCH][0]
             all_bids = deepcopy(self._bids_data)

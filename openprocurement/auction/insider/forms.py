@@ -9,8 +9,8 @@ from pytz import timezone
 import wtforms_json
 
 from openprocurement.auction.utils import prepare_extra_journal_fields
-from openprocurement.auction.dutch.constants import DUTCH, SEALEDBID, BESTBID
-from openprocurement.auction.dutch.utils import lock_bids, get_dutch_winner
+from openprocurement.auction.insider.constants import DUTCH, SEALEDBID, BESTBID
+from openprocurement.auction.insider.utils import lock_bids, get_dutch_winner
 
 
 wtforms_json.init()
