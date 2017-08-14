@@ -208,6 +208,7 @@ class DutchAuctionPhase(object):
                 if self.approve_dutch_winner(bid):
                     LOGGER.info('Approved dutch winner')
                     self.approve_audit_info_on_dutch_winner()
+                    self._bids_data[bid['bidder_id']] = bid
                     self.end_dutch()
                     if not self.debug:
                         simple.post_dutch_results(self)
@@ -224,7 +225,7 @@ class DutchAuctionPhase(object):
         self.audit['timeline'][DUTCH]['timeline']['end']\
             = datetime.now(tzlocal()).isoformat()
         spawn(self.clean_up_preplanned_jobs)
-        if len(self.auction_document['results'][DUTCH]) == 0:
+        if not self.auction_document['results'][DUTCH]:
             LOGGER.info("No bids on dutch phase. End auction now.")
             self.end_auction()
             return
@@ -246,6 +247,7 @@ class SealedBidAuctionPhase(object):
                 self._bids_data[bid['bidder_id']] = bid
                 self.audit['timeline'][SEALEDBID]['bids'].append(bid)
             sleep(0.1)
+        LOGGER.info("Bids queue done. Breaking woker")
         
     def switch_to_sealedbid(self, stage):
         with simple.lock_bids(self), simple.update_auction_document(self):
@@ -279,14 +281,30 @@ class SealedBidAuctionPhase(object):
 
 class BestBidAuctionPhase(object):
 
+    def approve_bid_on_bestbid(self, bid):
+        if bid:
+            LOGGER.info("Updating dutch winner {bidder_id} with value {amount} on {time}".format(
+                **bid
+            ))
+            self._bids_data[bid['bidder_id']].update(bid)
+            if not self.auction_document['results'][BESTBID]:
+                self.auction_document['results'][BESTBID].append(bid)
+            self.audit['timeline'][BESTBID]['bids'].append(bid)
+            return True
+        return False
+
+    def approve_audit_info_on_bestbid(self, run_time):
+        self.audit['timeline'][BESTBID]['timeline']['end'] = run_time
+        self.audit['results'][BESTBID] = self.auction_document['results'][BESTBID]
+
     def add_bestbid(self, bid):
         try:
-            LOGGER.info(
-                "Dutch winner id={bidder_id} placed bid {bid} on {time}".format(
-                    **bid
+            if self.approve_bid_on_bestbid(bid):
+                LOGGER.info(
+                    "Dutch winner id={bidder_id} placed bid {amount} on {time}".format(
+                        **bid
+                    )
                 )
-            )
-            self._bids_data[bid['bidder_id']].update(bid)
             return True
         except Exception as e:
             LOGGER.info(
@@ -295,7 +313,7 @@ class BestBidAuctionPhase(object):
                 )
             )
             return e
-        return True
+        return False
 
     def switch_to_bestbid(self, stage):
         with simple.lock_bids(self), simple.update_auction_document(self):
@@ -307,5 +325,5 @@ class BestBidAuctionPhase(object):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
             self.auction_document['current_phase'] = END
-            self.audit['timeline'][BESTBID]['timeline']['end'] = run_time
+            self.approve_audit_info_on_bestbid(run_time)
         self.end_auction()
