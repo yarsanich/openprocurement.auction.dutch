@@ -13,16 +13,16 @@ from datetime import datetime
 from pytz import timezone as tz
 from dateutil.tz import tzlocal
 
-from openprocurement.auction.worker.server import _LoggerStream, AuctionsWSGIHandler
+from openprocurement.auction.worker.server import _LoggerStream,\
+    AuctionsWSGIHandler
 from openprocurement.auction.insider.forms import BidsForm, form_handler
 from openprocurement.auction.insider.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
     prepare_extra_journal_fields, get_bidder_id
-from openprocurement.auction.event_source import (
-    sse, send_event, send_event_to_client, remove_client,
+from openprocurement.auction.event_source import sse, send_event,\
+    send_event_to_client, remove_client,\
     push_timestamps_events, check_clients
-)
 
 
 app = Flask(__name__)
@@ -70,7 +70,8 @@ def login():
 
 @app.route('/authorized')
 def authorized():
-    if not('error' in request.args and request.args['error'] == 'access_denied'):
+    if not('error' in request.args and
+           request.args['error'] == 'access_denied'):
         resp = app.remote_oauth.authorized_response()
         if resp is None or hasattr(resp, 'data'):
             app.logger.info("Error Response from Oauth: {}".format(resp))
@@ -121,20 +122,30 @@ def check_authorization():
         # resp = app.remote_oauth.get('me')
         bidder_data = get_bidder_id(app, session)
         if bidder_data:
-            grant_timeout = iso8601.parse_date(bidder_data[u'expires']) - datetime.now(tzlocal())
+            grant_timeout = iso8601.parse_date(bidder_data[u'expires'])\
+                            - datetime.now(tzlocal())
             if grant_timeout > INVALIDATE_GRANT:
-                app.logger.info("Bidder {} with client_id {} pass check_authorization".format(
-                                bidder_data['bidder_id'], session['client_id'],
-                                ), extra=prepare_extra_journal_fields(request.headers))
+                app.logger.info(
+                    "Bidder {} with client_id {}"
+                    " pass check_authorization".format(
+                        bidder_data['bidder_id'],
+                        session['client_id'],
+                    ),
+                    extra=prepare_extra_journal_fields(request.headers)
+                )
                 return jsonify({'status': 'ok'})
             else:
                 app.logger.info(
-                    "Grant will end in a short time. Activate re-login functionality",
+                    "Grant will end in a short time."
+                    " Activate re-login functionality",
                     extra=prepare_extra_journal_fields(request.headers)
                 )
         else:
-            app.logger.warning("Client_id {} didn't passed check_authorization".format(session['client_id']),
-                               extra=prepare_extra_journal_fields(request.headers))
+            app.logger.warning(
+                "Client_id {} didn't passed"
+                " check_authorization".format(session['client_id']),
+                extra=prepare_extra_journal_fields(request.headers)
+            )
     abort(401)
 
 
@@ -161,12 +172,16 @@ def post_bid():
         return jsonify(app.form_handler())
     elif 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
-        if bidder_data and bidder_data['bidder_id'] == request.json['bidder_id']:
+        if bidder_data and bidder_data['bidder_id']\
+           == request.json['bidder_id']:
             return jsonify(app.form_handler())
         else:
-            app.logger.warning("Client with client id: {} and bidder_id {} wants post bid but response status from Oauth".format(
-                session.get('client_id', 'None'), request.json.get('bidder_id', 'None')
-            ))
+            app.logger.warning(
+                "Client with client id: {} and bidder_id {}"
+                " wants post bid but response status from Oauth".format(
+                    session.get('client_id', 'None'),
+                    request.json.get('bidder_id', 'None'))
+            )
     abort(401)
 
 
@@ -190,7 +205,10 @@ def kickclient():
 
 
 def run_server(auction, mapping_expire_time, logger,
-               timezone='Europe/Kiev', bids_form=BidsForm, form_handler=form_handler, cookie_path='tenders'):
+               timezone='Europe/Kiev',
+               bids_form=BidsForm,
+               form_handler=form_handler,
+               cookie_path='insider'):
     app.config.update(auction.worker_defaults)
     # Replace Flask custom logger
     app.logger_name = logger.name
@@ -198,7 +216,9 @@ def run_server(auction, mapping_expire_time, logger,
     app.config['auction'] = auction
 
     app.config['timezone'] = tz(timezone)
-    app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(cookie_path, auction.auction_doc_id)
+    app.config['SESSION_COOKIE_PATH'] = '/{}/{}'.format(
+        cookie_path, auction.auction_doc_id
+    )
     app.config['SESSION_COOKIE_NAME'] = 'auction_session'
     app.oauth = OAuth(app)
     app.bids_form = bids_form
@@ -219,8 +239,10 @@ def run_server(auction, mapping_expire_time, logger,
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
 
     # Start server on unused port
-    lisener = get_lisener(auction.worker_defaults["STARTS_PORT"],
-                          host=auction.worker_defaults.get("WORKER_BIND_IP", ""))
+    lisener = get_lisener(
+        auction.worker_defaults["STARTS_PORT"],
+        host=auction.worker_defaults.get("WORKER_BIND_IP", "")
+    )
     app.logger.info(
         "Start server on {0}:{1}".format(*lisener.getsockname()),
         extra={"JOURNAL_REQUEST_ID": auction.request_id}

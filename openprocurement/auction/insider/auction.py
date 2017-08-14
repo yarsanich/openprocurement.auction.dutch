@@ -1,7 +1,6 @@
 import logging
 from requests import Session as RequestsSession
 from urlparse import urljoin
-from gevent import spawn
 from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
@@ -13,31 +12,19 @@ from datetime import datetime
 from dateutil.tz import tzlocal
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
-from openprocurement.auction.worker.mixins import (
-    RequestIDServiceMixin, AuditServiceMixin,
-    DateTimeServiceMixin, TIMEZONE
-)
+from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
+    AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
     BestBidAuctionPhase
-from openprocurement.auction.insider.constants import (
-    REQUEST_QUEUE_SIZE,
-    REQUEST_QUEUE_TIMEOUT,
-    DUTCH_ROUNDS,
-    PRESTARTED,
-    DUTCH,
-    PRESEALEDBID,
-    SEALEDBID,
-    PREBESTBID,
-    BESTBID,
-    END
-)
-from openprocurement.auction.insider.journal import (
-    AUCTION_WORKER_SERVICE_END_AUCTION,
-    AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,
-    AUCTION_WORKER_SERVICE_PREPARE_SERVER,
+from openprocurement.auction.insider.constants import REQUEST_QUEUE_SIZE,\
+    REQUEST_QUEUE_TIMEOUT, DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
+    BESTBID, END
+from openprocurement.auction.insider.journal import\
+    AUCTION_WORKER_SERVICE_END_AUCTION,\
+    AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
+    AUCTION_WORKER_SERVICE_PREPARE_SERVER,\
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
-)
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids
 from openprocurement.auction.utils import delete_mapping
@@ -118,7 +105,9 @@ class Auction(DutchDBServiceMixin,
         self.get_auction_info()
         with lock_bids(self), update_auction_document(self):
             self.auction_document["current_stage"] = 0
-            LOGGER.info("Switched current stage to {}".format(self.auction_document['current_stage']))
+            LOGGER.info("Switched current stage to {}".format(
+                self.auction_document['current_stage']
+            ))
 
     @property
     def bidders_count(self):
@@ -130,7 +119,9 @@ class Auction(DutchDBServiceMixin,
 
             if self.debug:
                 LOGGER.info("Get _auction_data from auction_document")
-                self._auction_data = self.auction_document.get('test_auction_data', {})
+                self._auction_data = self.auction_document.get(
+                    'test_auction_data', {}
+                )
             self.get_auction_info()
             self.audit = prepare_audit(self)
 
@@ -148,7 +139,9 @@ class Auction(DutchDBServiceMixin,
 
         for index, stage in enumerate(self.auction_document['stages'][1:], 1):
             if stage['type'].startswith(DUTCH):
-                name = 'End of dutch stage: [{} -> {}]'.format(index - 1, index)
+                name = 'End of dutch stage: [{} -> {}]'.format(
+                    index - 1, index
+                )
                 id = 'auction:{}-{}'.format(DUTCH, index)
                 func = self.next_stage
             elif stage['type'] == PRESEALEDBID:
@@ -190,7 +183,13 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id,
                    "MESSAGE_ID": AUCTION_WORKER_SERVICE_PREPARE_SERVER}
         )
-        self.server = run_server(self, self.convert_datetime(self.auction_document['stages'][-2]['start']), LOGGER)
+        self.server = run_server(
+            self,
+            self.convert_datetime(
+                self.auction_document['stages'][-2]['start']
+            ),
+            LOGGER
+        )
 
     def wait_to_end(self):
         self._end_auction_event.wait()
@@ -198,12 +197,15 @@ class Auction(DutchDBServiceMixin,
             "JOURNAL_REQUEST_ID": self.request_id,
             "MESSAGE_ID": AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER
         })
-                
-    def clean_up_preplanned_jobs(self):
-        jobs = SCHEDULER.get_jobs()
 
-        _f = lambda j: (j.id.startswith('auction:{}'.format(DUTCH)) or j.id.startswith('auction:{}'.format(PRESEALEDBID)))
-        for job in filter(_f, jobs):
+    def clean_up_preplanned_jobs(self):
+        def filter_job(job):
+            return (
+                job.id.startswith('auction:{}'.format(DUTCH)) or
+                job.id.startswith('auction:{}'.format(PRESEALEDBID))
+            )
+        jobs = SCHEDULER.get_jobs()
+        for job in filter(filter_job, jobs):
             job.remove()
 
     def finish_dutch(self, stage):
@@ -215,7 +217,9 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id,
                    "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_AUCTION}
         )
-        LOGGER.debug("Stop server", extra={"JOURNAL_REQUEST_ID": self.request_id})
+        LOGGER.debug(
+            "Stop server", extra={"JOURNAL_REQUEST_ID": self.request_id}
+        )
         if self.server:
             self.server.stop()
         LOGGER.debug(
@@ -232,12 +236,16 @@ class Auction(DutchDBServiceMixin,
         # self.auction_document["results"] = []
         # for item in minimal_bids:
         #     self.auction_document["results"].append(prepare_results_stage(**item))
-        self.auction_document["current_stage"] = (len(self.auction_document["stages"]) - 1)
+        self.auction_document["current_stage"] = (len(
+            self.auction_document["stages"]) - 1)
         LOGGER.debug(' '.join((
             'Document in end_stage: \n', yaml_dump(dict(self.auction_document))
         )), extra={"JOURNAL_REQUEST_ID": self.request_id})
         # self.approve_audit_info_on_announcement()
-        LOGGER.info('Audit data: \n {}'.format(yaml_dump(self.audit)), extra={"JOURNAL_REQUEST_ID": self.request_id})
+        LOGGER.info(
+            'Audit data: \n {}'.format(yaml_dump(self.audit)),
+            extra={"JOURNAL_REQUEST_ID": self.request_id}
+        )
         if self.debug:
             LOGGER.debug(
                 'Debug: put_auction_data disabled !!!',

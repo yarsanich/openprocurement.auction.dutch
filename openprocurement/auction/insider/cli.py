@@ -9,7 +9,8 @@ import yaml
 import sys
 import os
 
-from openprocurement.auction.insider.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.auction import Auction,\
+    SCHEDULER
 from openprocurement.auction.worker import constants as C
 
 
@@ -20,10 +21,20 @@ def main():
     parser.add_argument('auction_worker_config', type=str,
                         help='Auction Worker Configuration File')
     parser.add_argument('--auction_info', type=str, help='Auction File')
-    parser.add_argument('--auction_info_from_db', type=str, help='Get auction data from local database')
-    parser.add_argument('--with_api_version', type=str, help='Tender Api Version')
-    parser.add_argument('--planning_procerude', type=str, help='Override planning procerude',
-                        default=None, choices=[None, C.PLANNING_FULL, C.PLANNING_PARTIAL_DB, C.PLANNING_PARTIAL_CRON])
+    parser.add_argument('--auction_info_from_db',
+                        type=str, help='Get auction data from local database')
+    parser.add_argument('--with_api_version', type=str,
+                        help='Tender Api Version')
+    parser.add_argument(
+        '--planning_procerude',
+        type=str, help='Override planning procerude',
+        default=None, choices=[
+            None,
+            C.PLANNING_FULL,
+            C.PLANNING_PARTIAL_DB,
+            C.PLANNING_PARTIAL_CRON
+        ]
+    )
 
     args = parser.parse_args()
 
@@ -32,7 +43,8 @@ def main():
         if args.with_api_version:
             worker_defaults['TENDERS_API_VERSION'] = args.with_api_version
         if args.cmd != 'cleanup':
-            worker_defaults['handlers']['journal']['TENDER_ID'] = args.auction_doc_id
+            worker_defaults['handlers']['journal']['TENDER_ID']\
+                = args.auction_doc_id
         for key in ('TENDERS_API_VERSION', 'TENDERS_API_URL',):
             worker_defaults['handlers']['journal'][key] = worker_defaults[key]
 

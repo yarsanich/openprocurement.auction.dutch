@@ -25,13 +25,15 @@ def validate_bid_value(form, field):
     phase = form.document.get('current_phase')
     if phase == DUTCH:
         try:
-            current_amount = form.document['stages'][form.document['current_stage']].get(
+            current_stage = form.document['current_stage']
+            current_amount = form.document['stages'][current_stage].get(
                 'amount',
             )
             if not isinstance(current_amount, Decimal):
                 current_amount = Decimal(str(current_amount))
             if current_amount != field.data:
-                message = u"Passed value doesn't match current amount={}".format(current_amount)
+                message = u"Passed value doesn't match"\
+                          " current amount={}".format(current_amount)
                 raise ValidationError(message)
             return True
         except KeyError as e:
@@ -66,9 +68,10 @@ def validate_bid_value(form, field):
             raise ValidationError(message)
         return True
     else:
-        raise ValidationError('Not allowed to post bid on current `{}` phase'.format(
-            phase
-        ))
+        raise ValidationError(
+            'Not allowed to post bid on current'
+            ' ({}) phase'.format(phase)
+        )
     return True
 
 
@@ -91,15 +94,17 @@ def validate_bidder_id(form, field):
             message = u'Not allowd to post bid for dutch winner'
             form[field.name].errors.append(message)
             raise ValidationError(message)
-        if form.data['bidder_id'] in form.auction._bids_data and field.data != -1:
+        if form.data['bidder_id'] in form.auction._bids_data and\
+           field.data != -1:
             raise ValidationError("You've already passed a value")
         return True
     elif phase == DUTCH:
         return True
     else:
-        raise ValidationError("Not allowed to post bid on current `{}` phase".format(
-            phase
-        ))
+        raise ValidationError(
+            'Not allowed to post bid on current'
+            ' ({}) phase'.format(phase)
+        )
     raise ValidationError("Unknown error")
 
 
@@ -129,7 +134,6 @@ def form_handler():
     form.document = auction.auction_document
     current_time = datetime.now(timezone('Europe/Kiev'))
     current_phase = form.document.get('current_phase')
-    document = auction.auction_document
     if not form.validate():
         app.logger.info(
             "Bidder {} with client_id {} wants place bid {} in {}on phase {} "
@@ -154,7 +158,8 @@ def form_handler():
             })
             if not isinstance(ok, Exception):
                 app.logger.info(
-                    "Bidder {} with client {} has won dutch on value {}".format(
+                    "Bidder {} with client {} has won"
+                    " dutch on value {}".format(
                         form.data['bidder_id'],
                         session.get('client_id'),
                         form.data['bid']
@@ -163,11 +168,13 @@ def form_handler():
                 return {"status": "ok", "data": form.data}
             else:
                 app.logger.info(
-                    "Bidder {} with client_id {} wants place bid {} in {} on dutch "
+                    "Bidder {} with client_id {} wants place"
+                    " bid {} in {} on dutch "
                     "with errors {}".format(
                         request.json.get('bidder_id', 'None'),
                         session.get('client_id'),
-                        request.json.get('bid', 'None'), current_time.isoformat(),
+                        request.json.get('bid', 'None'),
+                        current_time.isoformat(),
                         repr(ok)
                     ),
                     extra=prepare_extra_journal_fields(request.headers)
@@ -201,11 +208,13 @@ def form_handler():
             return {"status": "ok", "data": form.data}
         else:
             app.logger.info(
-                "Bidder {} with client_id {} wants place bid {} in {} on dutch "
+                "Bidder {} with client_id {} wants place"
+                " bid {} in {} on dutch "
                 "with errors {}".format(
                     request.json.get('bidder_id', 'None'),
                     session.get('client_id'),
-                    request.json.get('bid', 'None'), current_time.isoformat(),
+                    request.json.get('bid', 'None'),
+                    current_time.isoformat(),
                     repr(ok)
                 ),
                 extra=prepare_extra_journal_fields(request.headers)

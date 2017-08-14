@@ -6,17 +6,15 @@ from datetime import datetime
 from dateutil.tz import tzlocal
 from gevent import spawn, sleep
 from gevent.event import Event
-from gevent.queue import Queue
 
 from openprocurement.auction.utils import get_tender_data, sorting_by_amount
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin
-from openprocurement.auction.worker.journal import (
-    AUCTION_WORKER_API_AUCTION_CANCEL,
-    AUCTION_WORKER_API_AUCTION_NOT_EXIST,
-    AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED,
+from openprocurement.auction.worker.journal import\
+    AUCTION_WORKER_API_AUCTION_CANCEL,\
+    AUCTION_WORKER_API_AUCTION_NOT_EXIST,\
+    AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED as API_NOT_APPROVED,\
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
-)
 from openprocurement.auction.insider import utils as simple
 from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, END, BESTBID
@@ -47,7 +45,9 @@ class DutchDBServiceMixin(DBServiceMixin):
 
             if auction_data:
                 self._auction_data['data'].update(auction_data['data'])
-                self.startDate = self.convert_datetime(self._auction_data['data']['auctionPeriod']['startDate'])
+                self.startDate = self.convert_datetime(
+                    self._auction_data['data']['auctionPeriod']['startDate']
+                )
                 del auction_data
             else:
                 self.get_auction_document()
@@ -61,8 +61,10 @@ class DutchDBServiceMixin(DBServiceMixin):
                 else:
                     LOGGER.error("Auction {} not exists".format(
                         self.auction_doc_id
-                    ), extra={"JOURNAL_REQUEST_ID": self.request_id,
-                              "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST})
+                    ), extra={
+                        "JOURNAL_REQUEST_ID": self.request_id,
+                        "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST
+                    })
                     self._end_auction_event.set()
                     sys.exit(1)
 
@@ -83,11 +85,15 @@ class DutchDBServiceMixin(DBServiceMixin):
             self.auction_document = {"_rev": public_document["_rev"]}
         if self.debug:
             self.auction_document['mode'] = 'test'
-            self.auction_document['test_auction_data'] = deepcopy(self._auction_data)
+            self.auction_document['test_auction_data'] = deepcopy(
+                self._auction_data
+            )
 
         self.get_auction_info(prepare=True)
         if self.worker_defaults.get('sandbox_mode', False):
-            submissionMethodDetails = self._auction_data['data'].get('submissionMethodDetails', '')
+            submissionMethodDetails = self._auction_data['data'].get(
+                'submissionMethodDetails', ''
+            )
             if submissionMethodDetails == 'quick(mode:no-auction)':
                 simple.post_results_data(self, with_auctions_results=False)
                 return 0
@@ -121,15 +127,21 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
             if doc_id and bids_information:
                 # self.approve_audit_info_on_announcement(approved=bids_information)
                 if self.worker_defaults.get('with_document_service', False):
-                    doc_id = self.upload_audit_file_with_document_service(doc_id)
+                    doc_id = self.upload_audit_file_with_document_service(
+                        doc_id
+                    )
                 else:
-                    doc_id = self.upload_audit_file_without_document_service(doc_id)
+                    doc_id = self.upload_audit_file_without_document_service(
+                        doc_id
+                    )
                 return True
         else:
             LOGGER.info(
                 "Auctions results not approved",
-                extra={"JOURNAL_REQUEST_ID": self.request_id,
-                       "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED}
+                extra={
+                    "JOURNAL_REQUEST_ID": self.request_id,
+                    "MESSAGE_ID": API_NOT_APPROVED
+                }
             )
 
     def post_announce(self):
@@ -139,7 +151,7 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
 
 
 class DutchAuctionPhase(object):
-    
+
     def next_stage(self, stage):
 
         with simple.lock_bids(self), simple.update_auction_document(self):
@@ -159,14 +171,15 @@ class DutchAuctionPhase(object):
                     'passed': True
                 })
 
-                old = self.auction_document['stages'][stage_index - 1].get('amount', '') or\
-                    self.auction_document['initial_value']
+                old = self.auction_document['stages'][stage_index - 1].get(
+                    'amount', ''
+                ) or self.auction_document['initial_value']
                 self.current_value = stage['amount']
                 LOGGER.info('Switched dutch phase value from {} to {}'.format(
                     old, self.current_value)
                 )
-
-                self.audit['timeline'][DUTCH]['turn_{}'.format(stage_index)] = {
+                turn = 'turn_{}'.format(stage_index)
+                self.audit['timeline'][DUTCH][turn] = {
                     'amount': self.current_value,
                     'time': run_time,
                 }
@@ -190,7 +203,8 @@ class DutchAuctionPhase(object):
             return False
 
     def approve_audit_info_on_dutch_winner(self):
-        self.audit['timeline'][DUTCH]['bids'] = self.auction_document['results'][DUTCH]
+        results = self.auction_document['results'][DUTCH]
+        self.audit['timeline'][DUTCH]['bids'] = results
         self.audit['results'][DUTCH] = self.auction_document['results'][DUTCH]
 
     def add_dutch_winner(self, bid):
@@ -213,7 +227,10 @@ class DutchAuctionPhase(object):
                     return True
 
             except Exception as e:
-                LOGGER.fatal("Exception during initialization dutch winner. Error: {}".format(e))
+                LOGGER.fatal(
+                    "Exception during initialization dutch winner. "
+                    "Error: {}".format(e)
+                )
                 return e
 
     def end_dutch(self):
@@ -239,14 +256,15 @@ class SealedBidAuctionPhase(object):
                 break
             bid = self.bids_queue.get()
             if bid:
-                LOGGER.info("Adding bid {bidder_id} with value {amount} on {time}".format(
-                    **bid
-                ))
+                LOGGER.info(
+                    "Adding bid {bidder_id} with value {amount}"
+                    " on {time}".format(**bid)
+                )
                 self._bids_data[bid['bidder_id']] = bid
                 self.audit['timeline'][SEALEDBID]['bids'].append(bid)
             sleep(0.1)
         LOGGER.info("Bids queue done. Breaking woker")
-        
+
     def switch_to_sealedbid(self, stage):
         with simple.lock_bids(self), simple.update_auction_document(self):
             self._end_sealedbid = Event()
@@ -260,7 +278,8 @@ class SealedBidAuctionPhase(object):
     def approve_audit_info_on_sealedbid(self, run_time):
         self.audit['timeline'][SEALEDBID]['timeline']['end']\
             = run_time
-        self.audit['results'][SEALEDBID] = self.auction_document['results'][SEALEDBID]
+        results = self.auction_document['results'][SEALEDBID]
+        self.audit['results'][SEALEDBID] = results
 
     def end_sealedbid(self, stage):
         with simple.update_auction_document(self):
@@ -270,7 +289,7 @@ class SealedBidAuctionPhase(object):
                 LOGGER.info(
                     "Waiting for bids to process"
                 )
-                gevent.sleep(0.1)
+                sleep(0.1)
             LOGGER.info("Done processing bids queue")
             self.auction_document['current_phase'] = PREBESTBID
             dutch_winner = self.auction_document['results'][DUTCH][0]
@@ -281,15 +300,16 @@ class SealedBidAuctionPhase(object):
                 all_bids.values()
             )
             self.approve_audit_info_on_sealedbid(run_time)
-                
+
 
 class BestBidAuctionPhase(object):
 
     def approve_bid_on_bestbid(self, bid):
         if bid:
-            LOGGER.info("Updating dutch winner {bidder_id} with value {amount} on {time}".format(
-                **bid
-            ))
+            LOGGER.info(
+                "Updating dutch winner {bidder_id} with value {amount}"
+                " on {time}".format(**bid)
+            )
             self._bids_data[bid['bidder_id']].update(bid)
             if not self.auction_document['results'][BESTBID]:
                 self.auction_document['results'][BESTBID].append(bid)
@@ -299,15 +319,15 @@ class BestBidAuctionPhase(object):
 
     def approve_audit_info_on_bestbid(self, run_time):
         self.audit['timeline'][BESTBID]['timeline']['end'] = run_time
-        self.audit['results'][BESTBID] = self.auction_document['results'][BESTBID]
+        results = self.auction_document['results'][BESTBID]
+        self.audit['results'][BESTBID] = results
 
     def add_bestbid(self, bid):
         try:
             if self.approve_bid_on_bestbid(bid):
                 LOGGER.info(
-                    "Dutch winner id={bidder_id} placed bid {amount} on {time}".format(
-                        **bid
-                    )
+                    "Dutch winner id={bidder_id} placed bid {amount}"
+                    " on {time}".format(**bid)
                 )
             return True
         except Exception as e:
