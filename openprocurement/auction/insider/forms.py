@@ -59,7 +59,6 @@ def validate_bid_value(form, field):
         winner = get_dutch_winner(form.document)
         dutch_winner_value = winner.get('amount')
 
-        app.logger.info('DUTCH winner amount {}'.format(dutch_winner_value))
         if not isinstance(dutch_winner_value, Decimal):
             dutch_winner_value = Decimal(str(dutch_winner_value))
         if field.data != -1 and (field.data <= dutch_winner_value):
@@ -91,7 +90,7 @@ def validate_bidder_id(form, field):
     elif phase == SEALEDBID:
         dutch_winner = get_dutch_winner(form.document)
         if dutch_winner.get('bidder_id') == field.data:
-            message = u'Not allowd to post bid for dutch winner'
+            message = u'Not allowed to post bid for dutch winner'
             form[field.name].errors.append(message)
             raise ValidationError(message)
         if form.data['bidder_id'] in form.auction._bids_data and\
