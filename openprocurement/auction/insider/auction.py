@@ -28,7 +28,7 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids
-from openprocurement.auction.utils import delete_mapping
+from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
 LOGGER = logging.getLogger('Auction Worker')
@@ -225,9 +225,9 @@ class Auction(DutchDBServiceMixin,
         delete_mapping(self.worker_defaults,
                        self.auction_doc_id)
 
-        minimal_bids = self.filter_bids_keys(sorting_by_amount(
+        minimal_bids = sorting_by_amount(
             self.auction_document['results']
-        ))
+        )
         self.auction_document["results"] = []
         for item in minimal_bids:
             self.auction_document["results"].append(prepare_results_stage(**item))
