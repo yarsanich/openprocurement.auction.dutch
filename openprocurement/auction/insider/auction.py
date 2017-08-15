@@ -12,6 +12,7 @@ from datetime import datetime
 from dateutil.tz import tzlocal
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
+from openprocurement.auction.worker.utils import prepare_results_stage
 from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
     AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
@@ -77,11 +78,7 @@ class Auction(DutchDBServiceMixin,
                            session=Session(retry_delays=range(10)))
         self.audit = {}
         self.retries = 10
-        self.bidders_data = []
         self.mapping = {}
-        self.ends = {
-            DUTCH: Event()
-        }
         self._bids_data = {}
         LOGGER.info(self.debug)
         # auction phases controllers
@@ -111,7 +108,7 @@ class Auction(DutchDBServiceMixin,
 
     @property
     def bidders_count(self):
-        return len(self.bidders_data)
+        return len(self._bids_data.values())
 
     def schedule_auction(self):
         self.generate_request_id()
@@ -228,14 +225,12 @@ class Auction(DutchDBServiceMixin,
         delete_mapping(self.worker_defaults,
                        self.auction_doc_id)
 
-        # start_stage, end_stage = self.get_round_stages(ROUNDS)
-        # minimal_bids = deepcopy(
-        #     self.auction_document["stages"][start_stage:end_stage]
-        # )
-        # minimal_bids = self.filter_bids_keys(sorting_by_amount(minimal_bids))
-        # self.auction_document["results"] = []
-        # for item in minimal_bids:
-        #     self.auction_document["results"].append(prepare_results_stage(**item))
+        minimal_bids = self.filter_bids_keys(sorting_by_amount(
+            self.auction_document['results']
+        ))
+        self.auction_document["results"] = []
+        for item in minimal_bids:
+            self.auction_document["results"].append(prepare_results_stage(**item))
         self.auction_document["current_stage"] = (len(
             self.auction_document["stages"]) - 1)
         LOGGER.debug(' '.join((
@@ -262,27 +257,47 @@ class Auction(DutchDBServiceMixin,
         )
         self._end_auction_event.set()
 
-    # def cancel_auction(self):
-    #     self.generate_request_id()
-    #     if self.get_auction_document():
-    #         LOGGER.info("Auction {} canceled".format(self.auction_doc_id),
-    #                     extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_CANCELED})
-    #         self.auction_document["current_stage"] = -100
-    #         self.auction_document["endDate"] = datetime.now(tzlocal()).isoformat()
-    #         LOGGER.info("Change auction {} status to 'canceled'".format(self.auction_doc_id),
-    #                     extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED})
-    #         self.save_auction_document()
-    #     else:
-    #         LOGGER.info("Auction {} not found".format(self.auction_doc_id),
-    #                     extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND})
+    def cancel_auction(self):
+        self.generate_request_id()
+        if self.get_auction_document():
+            LOGGER.info(
+                "Auction {} canceled".format(self.auction_doc_id),
+                extra={
+                    'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_CANCELED
+                }
+            )
+            self.auction_document["current_stage"] = -100
+            self.auction_document["endDate"] = datetime.now(tzlocal()).isoformat()
+            LOGGER.info(
+                "Change auction {} status to 'canceled'".format(self.auction_doc_id),
+                extra={
+                    'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED
+                }
+            )
+            self.save_auction_document()
+        else:
+            LOGGER.info(
+                "Auction {} not found".format(self.auction_doc_id),
+                extra={
+                    'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND
+                }
+            )
 
-    # def reschedule_auction(self):
-    #     self.generate_request_id()
-    #     if self.get_auction_document():
-    #         LOGGER.info("Auction {} has not started and will be rescheduled".format(self.auction_doc_id),
-    #                     extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE})
-    #         self.auction_document["current_stage"] = -101
-    #         self.save_auction_document()
-    #     else:
-    #         LOGGER.info("Auction {} not found".format(self.auction_doc_id),
-    #                     extra={'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND})
+    def reschedule_auction(self):
+        self.generate_request_id()
+        if self.get_auction_document():
+            LOGGER.info(
+                "Auction {} has not started and will be rescheduled".format(self.auction_doc_id),
+                extra={
+                    'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
+                }
+            )
+            self.auction_document["current_stage"] = -101
+            self.save_auction_document()
+        else:
+            LOGGER.info(
+                "Auction {} not found".format(self.auction_doc_id),
+                extra={
+                    'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND
+                }
+            )

@@ -261,9 +261,6 @@ def run_server(auction, mapping_expire_time, logger,
         mapping_value,
         mapping_expire_time
     ), extra={"JOURNAL_REQUEST_ID": auction.request_id})
-    logger.fatal("bidders data {}".format(
-        app.config['auction'].bidders_data
-    ))
 
     # Spawn events functionality
     spawn(push_timestamps_events, app,)

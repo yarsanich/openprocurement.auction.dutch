@@ -26,6 +26,7 @@ LOGGER = logging.getLogger("Auction Worker")
 class DutchDBServiceMixin(DBServiceMixin):
     """ Mixin class to work with couchdb"""
     def get_auction_info(self, prepare=False):
+        # TODO: get bid info on login
         if not self.debug:
             if prepare:
                 self._auction_data = get_tender_data(
@@ -174,13 +175,13 @@ class DutchAuctionPhase(object):
                 old = self.auction_document['stages'][stage_index - 1].get(
                     'amount', ''
                 ) or self.auction_document['initial_value']
-                self.current_value = stage['amount']
+    
                 LOGGER.info('Switched dutch phase value from {} to {}'.format(
-                    old, self.current_value)
+                    old, stage['amount'])
                 )
                 turn = 'turn_{}'.format(stage_index)
                 self.audit['timeline'][DUTCH][turn] = {
-                    'amount': self.current_value,
+                    'amount': stage['amount'],
                     'time': run_time,
                 }
 
@@ -194,7 +195,11 @@ class DutchAuctionPhase(object):
                 "changed": True,
                 "bid": bid['bidder_id'],
             })
-            self.auction_document['results'][DUTCH].append(bid)
+
+            bid.update({'dutch_winner': True})
+            self.auction_document['results'].append(bid)
+            self.approve_audit_info_on_dutch_winner(bid)
+            self._bids_data[bid['bidder_id']] = bid
             return True
         except Exception as e:
             LOGGER.warn("Unable to post dutch winner. Error: {}".format(
@@ -202,10 +207,9 @@ class DutchAuctionPhase(object):
             ))
             return False
 
-    def approve_audit_info_on_dutch_winner(self):
-        results = self.auction_document['results'][DUTCH]
-        self.audit['timeline'][DUTCH]['bids'] = results
-        self.audit['results'][DUTCH] = self.auction_document['results'][DUTCH]
+    def approve_audit_info_on_dutch_winner(self, bid):
+        self.audit['timeline'][DUTCH]['bids'].append(bid)
+        self.audit['results'].append(bid)
 
     def add_dutch_winner(self, bid):
         with simple.update_auction_document(self):
@@ -219,13 +223,10 @@ class DutchAuctionPhase(object):
             try:
                 if self.approve_dutch_winner(bid):
                     LOGGER.info('Approved dutch winner')
-                    self.approve_audit_info_on_dutch_winner()
-                    self._bids_data[bid['bidder_id']] = bid
                     self.end_dutch()
                     if not self.debug:
                         simple.post_dutch_results(self)
                     return True
-
             except Exception as e:
                 LOGGER.fatal(
                     "Exception during initialization dutch winner. "
@@ -240,7 +241,7 @@ class DutchAuctionPhase(object):
         self.audit['timeline'][DUTCH]['timeline']['end']\
             = datetime.now(tzlocal()).isoformat()
         spawn(self.clean_up_preplanned_jobs)
-        if not self.auction_document['results'][DUTCH]:
+        if not self.auction_document['results']:
             LOGGER.info("No bids on dutch phase. End auction now.")
             self.end_auction()
             return
@@ -260,6 +261,12 @@ class SealedBidAuctionPhase(object):
                     "Adding bid {bidder_id} with value {amount}"
                     " on {time}".format(**bid)
                 )
+                if bid['amount'] == -1:
+                    bid.update({'cancelled': True})
+                    LOGGER.info(
+                        "Bid {bidder_id} marked for cancellation"
+                        " on {time}".format(**bid)
+                    )
                 self._bids_data[bid['bidder_id']] = bid
                 self.audit['timeline'][SEALEDBID]['bids'].append(bid)
             sleep(0.1)
@@ -278,8 +285,8 @@ class SealedBidAuctionPhase(object):
     def approve_audit_info_on_sealedbid(self, run_time):
         self.audit['timeline'][SEALEDBID]['timeline']['end']\
             = run_time
-        results = self.auction_document['results'][SEALEDBID]
-        self.audit['results'][SEALEDBID] = results
+        results = self.auction_document['results']
+        self.audit['results'] = results
 
     def end_sealedbid(self, stage):
         with simple.update_auction_document(self):
@@ -292,11 +299,8 @@ class SealedBidAuctionPhase(object):
                 sleep(0.1)
             LOGGER.info("Done processing bids queue")
             self.auction_document['current_phase'] = PREBESTBID
-            dutch_winner = self.auction_document['results'][DUTCH][0]
             all_bids = deepcopy(self._bids_data)
-            all_bids[dutch_winner['bidder_id']] = dutch_winner
-            all_bids[dutch_winner['bidder_id']].update({"dutch_winner": True})
-            self.auction_document['results'][SEALEDBID] = sorting_by_amount(
+            self.auction_document['results'] = sorting_by_amount(
                 all_bids.values()
             )
             self.approve_audit_info_on_sealedbid(run_time)
@@ -311,16 +315,14 @@ class BestBidAuctionPhase(object):
                 " on {time}".format(**bid)
             )
             self._bids_data[bid['bidder_id']].update(bid)
-            if not self.auction_document['results'][BESTBID]:
-                self.auction_document['results'][BESTBID].append(bid)
             self.audit['timeline'][BESTBID]['bids'].append(bid)
             return True
         return False
 
     def approve_audit_info_on_bestbid(self, run_time):
         self.audit['timeline'][BESTBID]['timeline']['end'] = run_time
-        results = self.auction_document['results'][BESTBID]
-        self.audit['results'][BESTBID] = results
+        results = self.auction_document['results']
+        self.audit['results'] = results
 
     def add_bestbid(self, bid):
         try:
@@ -349,5 +351,12 @@ class BestBidAuctionPhase(object):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
             self.auction_document['current_phase'] = END
+            all_bids = deepcopy(self._bids_data)
+            self.auction_document['results'] = sorting_by_amount(
+                all_bids.values()
+            )
+            if not self.debug:
+                # TODO: post results data
+                pass
             self.approve_audit_info_on_bestbid(run_time)
         self.end_auction()

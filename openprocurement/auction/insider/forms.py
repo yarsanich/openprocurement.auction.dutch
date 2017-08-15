@@ -46,13 +46,16 @@ def validate_bid_value(form, field):
         if not isinstance(current_amount, Decimal):
             current_amount = Decimal(str(current_amount))
         app.logger.fatal("DUTCH WINNER: {}".format(current_amount))
-        if field.data != -1 and (field.data <= current_amount):
+        if field.data != Decimal('-1') and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
             form[field.name].errors.append(message)
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
-        if field.data <= 0.0 and field.data != -1:
+        if field.data <= Decimal('0.0') and field.data != Decimal('-1') or (
+                field.data == Decimal('-1') and form.data['bidder_id'] not in
+                form.auction._bids_data
+        ):
             message = u'To low value'
             form[field.name].errors.append(message)
             raise ValidationError(message)
@@ -61,7 +64,7 @@ def validate_bid_value(form, field):
 
         if not isinstance(dutch_winner_value, Decimal):
             dutch_winner_value = Decimal(str(dutch_winner_value))
-        if field.data != -1 and (field.data <= dutch_winner_value):
+        if field.data != Decimal('-1') and (field.data <= dutch_winner_value):
             message = u'Bid value can\'t be less or equal current amount'
             form[field.name].errors.append(message)
             raise ValidationError(message)
@@ -93,8 +96,10 @@ def validate_bidder_id(form, field):
             message = u'Not allowed to post bid for dutch winner'
             form[field.name].errors.append(message)
             raise ValidationError(message)
-        if form.data['bidder_id'] in form.auction._bids_data and\
-           field.data != -1:
+        if field.data in form.auction._bids_data and\
+           form.data['bid'] != Decimal('-1'):
+            if str(form.auction._bids_data[field.data]['amount']) == '-1':
+                return True
             raise ValidationError("You've already passed a value")
         return True
     elif phase == DUTCH:
