@@ -42,7 +42,7 @@ def announce_results_data(auction, results=None):
     if not results:
         results = get_tender_data(
             auction.tender_url,
-            user=auction.worker_defaults["TENDERS_API_TOKEN"],
+            user=auction.worker_defaults["resource_api_token"],
             request_id=auction.request_id,
             session=auction.session
         )
@@ -136,7 +136,7 @@ def prepare_auction_document(auction):
         "tenderID": auction._auction_data["data"].get("tenderID", ""),
         "procurementMethodType": auction._auction_data["data"].get(
             "procurementMethodType", "default"),
-        "TENDERS_API_VERSION": auction.worker_defaults["TENDERS_API_VERSION"],
+        "TENDERS_API_VERSION": auction.worker_defaults["resource_api_version"],
         "current_stage": -1,
         "current_phase": PRESTARTED,
         "results": [],
