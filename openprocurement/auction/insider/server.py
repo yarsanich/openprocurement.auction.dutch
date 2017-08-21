@@ -19,7 +19,7 @@ from openprocurement.auction.insider.forms import BidsForm, form_handler
 from openprocurement.auction.insider.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
-    prepare_extra_journal_fields, get_bidder_id
+    prepare_extra_journal_fields, get_bidder_id, calculate_hash
 from openprocurement.auction.event_source import sse, send_event,\
     send_event_to_client, remove_client,\
     push_timestamps_events, check_clients
@@ -34,38 +34,29 @@ app.logins_cache = {}
 
 @app.route('/login')
 def login():
-    if 'bidder_id' in request.args and 'hash' in request.args:
-        # TODO: no preknown bidders in dutch auction
-        next_url = request.args.get('next') or request.referrer or None
-        if 'X-Forwarded-Path' in request.headers:
-            callback_url = urljoin(
-                request.headers['X-Forwarded-Path'],
-                'authorized'
-            )
-        else:
-            callback_url = url_for('authorized', next=next_url, _external=True)
+    bidder_id = os.urandom(16).encode('hex')
+    hash = calculate_hash(bidder_id, app.config['HASH_SECRET'])
 
-        # TODO: fix me
-        bidder_id = request.args.get('bidder_id', '')
-        authorize_hash = request.args.get('hash', '')
-
-        response = app.remote_oauth.authorize(
-            callback=callback_url,
-            bidder_id=bidder_id,
-            hash=authorize_hash
+    next_url = request.args.get('next') or request.referrer or None
+    if 'X-Forwarded-Path' in request.headers:
+        callback_url = urljoin(
+            request.headers['X-Forwarded-Path'],
+            'authorized'
         )
-        app.config['auction'].bidders_data.append({
-            'id': bidder_id,
-            'date': ''
-        })
-        if 'return_url' in request.args:
-            session['return_url'] = request.args['return_url']
-        session['login_bidder_id'] = request.args['bidder_id']
-        session['login_hash'] = request.args['hash']
-        session['login_callback'] = callback_url
-        app.logger.debug("Session: {}".format(repr(session)))
-        return response
-    return abort(401)
+    else:
+        callback_url = url_for('authorized', next=next_url, _external=True)
+    response = app.remote_oauth.authorize(
+        callback=callback_url,
+        bidder_id=bidder_id,
+        hash=hash
+    )
+    if 'return_url' in request.args:
+        session['return_url'] = request.args['return_url']
+    session['login_bidder_id'] = bidder_id
+    session['login_hash'] = hash
+    session['login_callback'] = callback_url
+    app.logger.debug("Session: {}".format(repr(session)))
+    return response
 
 
 @app.route('/authorized')
@@ -208,7 +199,7 @@ def run_server(auction, mapping_expire_time, logger,
                timezone='Europe/Kiev',
                bids_form=BidsForm,
                form_handler=form_handler,
-               cookie_path='insider'):
+               cookie_path='insider-auctions'):
     app.config.update(auction.worker_defaults)
     # Replace Flask custom logger
     app.logger_name = logger.name
@@ -229,8 +220,8 @@ def run_server(auction, mapping_expire_time, logger,
         consumer_secret=app.config['OAUTH_CLIENT_SECRET'],
         request_token_params={'scope': 'email'},
         base_url=app.config['OAUTH_BASE_URL'],
-        access_token_url=app.config['OAUTH_ACCESS_TOKEN_URL'],
-        authorize_url=app.config['OAUTH_AUTHORIZE_URL']
+        access_token_url='/oauth/token/v2',
+        authorize_url='/oauth/authorize/v2'
     )
 
     @app.remote_oauth.tokengetter

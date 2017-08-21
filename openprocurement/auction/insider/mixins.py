@@ -175,7 +175,7 @@ class DutchAuctionPhase(object):
                 old = self.auction_document['stages'][stage_index - 1].get(
                     'amount', ''
                 ) or self.auction_document['initial_value']
-    
+
                 LOGGER.info('Switched dutch phase value from {} to {}'.format(
                     old, stage['amount'])
                 )
