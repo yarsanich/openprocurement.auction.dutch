@@ -50,6 +50,10 @@ def login():
         bidder_id=bidder_id,
         hash=hash
     )
+    app.config['auction'].bidders_data.append({
+        'id': bidder_id,
+        'date': ''
+    })
     if 'return_url' in request.args:
         session['return_url'] = request.args['return_url']
     session['login_bidder_id'] = bidder_id

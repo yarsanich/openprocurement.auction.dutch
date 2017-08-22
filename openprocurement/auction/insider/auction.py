@@ -90,6 +90,8 @@ class Auction(DutchDBServiceMixin,
         else:
             self.bids_queue = Queue(REQUEST_QUEUE_SIZE)
 
+        self.bidders_data = []
+
     def start_auction(self):
         self.generate_request_id()
         self.audit['timeline']['auction_start']['time']\
