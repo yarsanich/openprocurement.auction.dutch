@@ -51,7 +51,7 @@ def announce_results_data(auction, results=None):
                              if bid.get("status", "active") == "active"])
     for index, stage in enumerate(auction.auction_document['results']):
         if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
-            auction.auction_document[section][index].update({
+            auction.auction_document['results'][index].update({
                 "label": {
                     'uk':bids_information[stage['bidder_id']][0]["name"],
                     'en': bids_information[stage['bidder_id']][0]["name"],
@@ -111,7 +111,8 @@ def get_dutch_winner(auction_document):
 @contextmanager
 def update_auction_document(auction):
     yield auction.get_auction_document()
-    auction.save_auction_document()
+    if auction.auction_document:
+        auction.save_auction_document()
 
 
 @contextmanager
@@ -133,7 +134,7 @@ def prepare_auction_document(auction):
     auction.auction_document.update({
         "_id": auction.auction_doc_id,
         "stages": [],
-        "tenderID": auction._auction_data["data"].get("tenderID", ""),
+        "auctionID": auction._auction_data["data"].get("auctionID", ""),
         "procurementMethodType": auction._auction_data["data"].get(
             "procurementMethodType", "default"),
         "TENDERS_API_VERSION": auction.worker_defaults["resource_api_version"],
@@ -212,3 +213,75 @@ def prepare_auction_document(auction):
             'time': ''
         })
     return auction.auction_document
+
+
+def get_auction_info(auction, prepare=False):
+    if not auction.debug:
+        if prepare:
+            auction._auction_data = get_tender_data(
+                auction.tender_url,
+                request_id=auction.request_id,
+                session=auction.session
+            )
+        else:
+            auction._auction_data = {'data': {}}
+
+        auction_data = get_tender_data(
+            auction.tender_url + '/auction',
+            user=auction.worker_defaults["resource_api_token"],
+            request_id=auction.request_id,
+            session=auction.session
+        )
+        if auction_data:
+            auction._auction_data['data'].update(auction_data['data'])
+            auction.startDate = auction.convert_datetime(auction._auction_data['data']['auctionPeriod']['startDate'])
+            del auction_data
+        else:
+            auction.get_auction_document()
+            if auction.auction_document:
+                auction.auction_document["current_stage"] = -100
+                auction.save_auction_document()
+                LOGGER.warning(
+                    "Cancel auction: {}".format(auction.auction_doc_id),
+                    extra={
+                        "JOURNAL_REQUEST_ID": auction.request_id,
+                        "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_CANCEL
+                    }
+                )
+            else:
+                LOGGER.error(
+                    "Auction {} not exists".format(auction.auction_doc_id),
+                    extra={
+                        "JOURNAL_REQUEST_ID": auction.request_id,
+                        "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST
+                    }
+                )
+            auction._end_auction_event.set()
+            sys.exit(1)
+    if 'bids' in auction._auction_data['data']:
+        pass
+    LOGGER.info(
+        "Bidders count: {}".format(auction.bidders_count),
+        extra={
+            "JOURNAL_REQUEST_ID": auction.request_id,
+            "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
+        }
+    )
+
+    auction.startDate = auction.convert_datetime(
+        auction._auction_data['data']['auctionPeriod']['startDate']
+    )
+
+    if not prepare:
+        auction.bidders_data = []
+
+        for bid in auction._auction_data['data']['bids']:
+            if bid.get('status', 'active') == 'active':
+                auction.bidders_data.append({
+                    'id': bid['id'],
+                    'date': bid['date'],
+                    'value': bid['value'],
+                    'owner': bid.get('owner', '')
+                })
+        for index, uid in enumerate(auction.bidders_data):
+            auction.mapping[auction.bidders_data[index]['id']] = str(index + 1)
