@@ -81,9 +81,12 @@ def authorized():
     response = redirect(
         urljoin(request.headers['X-Forwarded-Path'], '.').rstrip('/')
     )
-    response.set_cookie('auctions_loggedin', '1',
+    response.set_cookie('auctions_loggedin',
+                        '1',
                         path=app.config['SESSION_COOKIE_PATH'],
-                        secure=False, httponly=False, max_age=36000
+                        secure=False,
+                        httponly=False,
+                        max_age=36000
                         )
     return response
 
@@ -197,12 +200,15 @@ def kickclient():
     abort(401)
 
 
-def run_server(auction, mapping_expire_time, logger,
+def run_server(auction,
+               mapping_expire_time,
+               logger,
                timezone='Europe/Kiev',
                bids_form=BidsForm,
                form_handler=form_handler,
                cookie_path='insider-auctions'):
     app.config.update(auction.worker_defaults)
+
     # Replace Flask custom logger
     app.logger_name = logger.name
     app._logger = logger
@@ -229,6 +235,7 @@ def run_server(auction, mapping_expire_time, logger,
     @app.remote_oauth.tokengetter
     def get_oauth_token():
         return session.get('remote_oauth')
+
     os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = 'true'
 
     # Start server on unused port
