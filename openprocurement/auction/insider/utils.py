@@ -13,6 +13,27 @@ from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
+def prepare_results_stage(
+        bidder_id="",
+        bidder_name="",
+        amount="",
+        time="",
+        dutch_winner=""):
+    stage = dict(
+        bidder_id=bidder_id,
+        time=str(time),
+        amount=amount or 0,
+        label=dict(
+            en="Bidder #{}".format(bidder_name),
+            uk="Учасник №{}".format(bidder_name),
+            ru="Участник №{}".format(bidder_name)
+        )
+    )
+    if dutch_winner:
+        stage['dutch_winner'] = True
+    return stage
+
+
 def post_results_data(auction, with_auctions_results=True):
     """TODO: make me work"""
     if with_auctions_results:
@@ -36,7 +57,6 @@ def post_results_data(auction, with_auctions_results=True):
     )
 
 
-
 def announce_results_data(auction, results=None):
     """TODO: make me work"""
     if not results:
@@ -46,9 +66,12 @@ def announce_results_data(auction, results=None):
             request_id=auction.request_id,
             session=auction.session
         )
-    bids_information = dict([(bid["id"], bid["tenderers"])
-                             for bid in results["data"]["bids"]
-                             if bid.get("status", "active") == "active"])
+    bids_information = dict([
+        (bid["id"], bid["tenderers"])
+        for bid in results["data"]["bids"]
+        if bid.get("status", "active") == "active"
+    ])
+
     for index, stage in enumerate(auction.auction_document['results']):
         if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
             auction.auction_document['results'][index].update({
@@ -139,7 +162,7 @@ def prepare_auction_document(auction):
             "procurementMethodType", "default"),
         "TENDERS_API_VERSION": auction.worker_defaults["resource_api_version"],
         "current_stage": -1,
-        "current_phase": PRESTARTED,
+        "current_phase": "",
         "results": [],
         "procuringEntity": auction._auction_data["data"].get(
             "procuringEntity", {}
