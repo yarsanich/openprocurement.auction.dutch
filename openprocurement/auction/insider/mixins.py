@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import logging
 import sys
 
@@ -158,6 +159,10 @@ class DutchAuctionPhase(object):
         with simple.lock_bids(self), simple.update_auction_document(self):
             run_time = simple.update_stage(self)
             stage_index = self.auction_document['current_stage']
+            self.auction_document['stages'][stage_index - 1].update({
+                'passed': True
+            })
+
             if stage['type'].startswith(DUTCH):
                 LOGGER.info(
                     '---------------- SWITCH DUTCH VALUE ----------------'
@@ -168,9 +173,6 @@ class DutchAuctionPhase(object):
                     self.auction_document['current_phase'] = DUTCH
                     self.audit['timeline'][DUTCH]['timeline']['start']\
                         = run_time
-                self.auction_document['stages'][stage_index - 1].update({
-                    'passed': True
-                })
 
                 old = self.auction_document['stages'][stage_index - 1].get(
                     'amount', ''
@@ -191,13 +193,14 @@ class DutchAuctionPhase(object):
     def approve_dutch_winner(self, bid):
         stage = self.auction_document['current_stage']
         try:
-            self.auction_document['stages'][stage].update({
-                "changed": True,
-                "bid": bid['bidder_id'],
-            })
-
+            bidder_name = 'debug'
+            winner_stage = self.auction_document['stages'][stage]
             bid.update({'dutch_winner': True})
-            self.auction_document['results'].append(bid)
+            result = simple.prepare_results_stage(**bid)
+            self.auction_document['stages'][stage].update(result)
+            self.auction_document['results'].append(
+                result
+            )
             self.approve_audit_info_on_dutch_winner(bid)
             self._bids_data[bid['bidder_id']] = bid
             return True
@@ -240,12 +243,22 @@ class DutchAuctionPhase(object):
         )
         self.audit['timeline'][DUTCH]['timeline']['end']\
             = datetime.now(tzlocal()).isoformat()
+        stage_index = self.auction_document['current_stage']
+        if self.auction_document['stages'][stage_index]['type'].startswith('dutch'):
+            self.auction_document['stages'][stage_index].update({
+                'passed': True
+            })
+
         spawn(self.clean_up_preplanned_jobs)
         if not self.auction_document['results']:
             LOGGER.info("No bids on dutch phase. End auction now.")
             self.end_auction()
             return
         self.auction_document['current_phase'] = PRESEALEDBID
+        for index, stage in enumerate(self.auction_document['stages']):
+            if stage['type'] == 'pre-sealedbid':
+                self.auction_document['current_stage'] = index
+                break
 
 
 class SealedBidAuctionPhase(object):
@@ -298,6 +311,10 @@ class SealedBidAuctionPhase(object):
                 )
                 sleep(0.1)
             LOGGER.info("Done processing bids queue")
+            if len(self._bids_data.keys()) < 2:
+                LOGGER.info("No bids on sealedbid phase. end auction")
+                self.end_auction()
+                return
             self.auction_document['current_phase'] = PREBESTBID
             all_bids = deepcopy(self._bids_data)
             self.auction_document['results'] = sorting_by_amount(
@@ -350,7 +367,6 @@ class BestBidAuctionPhase(object):
     def end_bestbid(self, stage):
         with simple.update_auction_document(self):
             run_time = simple.update_stage(self)
-            self.auction_document['current_phase'] = END
             all_bids = deepcopy(self._bids_data)
             self.auction_document['results'] = sorting_by_amount(
                 all_bids.values()
