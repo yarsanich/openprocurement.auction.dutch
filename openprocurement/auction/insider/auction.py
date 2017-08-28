@@ -12,7 +12,6 @@ from datetime import datetime
 from dateutil.tz import tzlocal
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
-from openprocurement.auction.worker.utils import prepare_results_stage
 from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
     AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
@@ -20,14 +19,14 @@ from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     BestBidAuctionPhase
 from openprocurement.auction.insider.constants import REQUEST_QUEUE_SIZE,\
     REQUEST_QUEUE_TIMEOUT, DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
-    BESTBID, END
+    BESTBID, END, PRESTARTED
 from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_AUCTION,\
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
     AUCTION_WORKER_SERVICE_PREPARE_SERVER,\
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 from openprocurement.auction.insider.utils import prepare_audit,\
-    update_auction_document, lock_bids
+    update_auction_document, lock_bids, prepare_results_stage
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
@@ -38,6 +37,7 @@ SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
 
 SCHEDULER.timezone = TIMEZONE
 END_DUTCH_PAUSE = 20
+BIDS_KEYS_FOR_COPY = ("bidder_id", "amount", "time", "dutch_winner")
 
 
 class Auction(DutchDBServiceMixin,
@@ -70,6 +70,7 @@ class Auction(DutchDBServiceMixin,
             self.debug = False
         self.bids_actions = BoundedSemaphore()
         self.session = RequestsSession()
+        self.features = {} # bw
         self.worker_defaults = worker_defaults
         if self.worker_defaults.get('with_document_service', False):
             self.session_ds = RequestsSession()
@@ -104,6 +105,7 @@ class Auction(DutchDBServiceMixin,
         self.get_auction_info()
         with lock_bids(self), update_auction_document(self):
             self.auction_document["current_stage"] = 0
+            self.auction_document['current_phase'] = PRESTARTED
             LOGGER.info("Switched current stage to {}".format(
                 self.auction_document['current_stage']
             ))
@@ -232,9 +234,11 @@ class Auction(DutchDBServiceMixin,
         )
         self.auction_document["results"] = []
         for item in minimal_bids:
-            self.auction_document["results"].append(prepare_results_stage(**item))
+            bid_data = {k:v for k, v in item.items() if k in BIDS_KEYS_FOR_COPY}
+            self.auction_document["results"].append(prepare_results_stage(**bid_data))
         self.auction_document["current_stage"] = (len(
             self.auction_document["stages"]) - 1)
+        self.auction_document['current_phase'] = END
         LOGGER.debug(' '.join((
             'Document in end_stage: \n', yaml_dump(dict(self.auction_document))
         )), extra={"JOURNAL_REQUEST_ID": self.request_id})
@@ -248,6 +252,7 @@ class Auction(DutchDBServiceMixin,
                 'Debug: put_auction_data disabled !!!',
                 extra={"JOURNAL_REQUEST_ID": self.request_id}
             )
+            LOGGER.fatal("SLEEEP !!!")
             sleep(10)
             self.save_auction_document()
         else:
