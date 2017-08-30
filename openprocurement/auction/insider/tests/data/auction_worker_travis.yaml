@@ -1,5 +1,5 @@
 ---
-TENDERS_API_URL: "http://127.0.0.1:6543/"
+resource_api_version: "http://127.0.0.1:6543/"
 TENDERS_API_VERSION: "2.3"
 TENDERS_API_TOKEN: "auction"
 AUCTIONS_URL: "http://localhost:8090/tenders/{auction_id}"

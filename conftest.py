@@ -9,10 +9,10 @@ import couchdb
 from dateutil.tz import tzlocal
 from StringIO import StringIO
 
-from openprocurement.auction.dutch.auction import Auction, SCHEDULER
-from openprocurement.auction.dutch.forms import BidsForm
-from openprocurement.auction.dutch.mixins import LOGGER
-from openprocurement.auction.dutch.tests.data.data import tender_data
+from openprocurement.auction.insider.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.forms import BidsForm
+from openprocurement.auction.insider.mixins import LOGGER
+from openprocurement.auction.insider.tests.data.data import tender_data
 
 
 def update_auctionPeriod(data):
@@ -37,8 +37,7 @@ def auction():
     yield Auction(
         tender_id=tender_data['data']['tenderID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
-        auction_data=tender_data,
-        lot_id=False
+        auction_data=tender_data
     )
 
 

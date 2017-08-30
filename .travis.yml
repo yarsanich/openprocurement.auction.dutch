@@ -22,4 +22,4 @@ install:
   - bin/buildout -N
   - curl -X PUT 0.0.0.0:5984/auctions
 script:
-  - bin/pytest openprocurement/auction/dutch/tests/unit/
+  - bin/pytest openprocurement/auction/insider/tests/unit/
