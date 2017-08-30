@@ -25,7 +25,7 @@ def update_auctionPeriod(data):
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
-worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/dutch/tests/data/auction_worker_defaults.yaml")
+worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/insider/tests/data/auction_worker_defaults.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
