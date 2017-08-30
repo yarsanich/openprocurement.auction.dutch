@@ -6,8 +6,8 @@ from copy import deepcopy
 from couchdb import Database
 from couchdb.http import HTTPError
 
-from openprocurement.auction.dutch.auction import Auction
-from openprocurement.auction.dutch.tests.data.data import tender_data, test_organization
+from openprocurement.auction.insider.auction import Auction
+from openprocurement.auction.insider.tests.data.data import tender_data, test_organization
 
 
 def test_get_auction_info(auction, logger):

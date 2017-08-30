@@ -1,6 +1,6 @@
 from openprocurement.auction.core import Planning, RunDispatcher
-from openprocurement.auction.dutch.interfaces import IDutchAuction
-from openprocurement.auction.dutch.constants import PROCUREMENT_METHOD_TYPE
+from openprocurement.auction.insider.interfaces import IDutchAuction
+from openprocurement.auction.insider.constants import PROCUREMENT_METHOD_TYPE
 
 from openprocurement.auction.interfaces import (IFeedItem,
                                                 IAuctionDatabridge,

@@ -15,20 +15,20 @@ EXTRAS_REQUIRE = {
 }
 ENTRY_POINTS = {
     'console_scripts': [
-        'auction_dutch = openprocurement.auction.dutch.cli:main',
+        'auction_insider = openprocurement.auction.insider.cli:main',
     ],
     'openprocurement.auction.auctions': [
-        'dgfNew = openprocurement.auction.dutch.includeme:includeme'
+        'dgfNew = openprocurement.auction.insider.includeme:includeme'
     ],
     'openprocurement.auction.robottests': [
-        'dutch_tests = openprocurement.auction.dutch.tests.functional.main:includeme'
+        'insider = openprocurement.auction.insider.tests.functional.main:includeme'
     ],
     'openprocurement.auction.routes': [
-        'dutchtenders = openprocurement.auction.dutch.views:includeme',
+        'insider = openprocurement.auction.insider.views:includeme',
     ]
 }
 
-setup(name='openprocurement.auction.dutch',
+setup(name='openprocurement.auction.insider',
       version=VERSION,
       description="",
       long_description=open("README.txt").read() + "\n" +
@@ -43,7 +43,7 @@ setup(name='openprocurement.auction.dutch',
       author='Quintagroup, Ltd.',
       author_email='info@quintagroup.com',
       license='Apache License 2.0',
-      url='https://github.com/yarsanich/openprocurement.auction.dutch',
+      url='https://github.com/yarsanich/openprocurement.auction.insider',
       packages=find_packages(exclude=['ez_setup']),
       namespace_packages=['openprocurement', 'openprocurement.auction'],
       include_package_data=True,
