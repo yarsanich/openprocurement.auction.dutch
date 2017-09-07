@@ -2,7 +2,7 @@
 import logging
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal
 from openprocurement.auction.utils import get_latest_bid_for_bidder
@@ -10,9 +10,8 @@ from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_D
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
     PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID, END
-from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
-    DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
-    DUTCH_DOWN_STEP, FIRST_PAUSE, SEALEDBID_TIMEDELTA,\
+from openprocurement.auction.insider.constants import MULTILINGUAL_FIELDS,\
+    ADDITIONAL_LANGUAGES, DUTCH_DOWN_STEP, FIRST_PAUSE, SEALEDBID_TIMEDELTA,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
@@ -177,7 +176,7 @@ def update_stage(auction):
     return run_time
 
 
-def prepare_auction_document(auction):
+def prepare_auction_document(auction, fast_forward=False):
     auction.auction_document.update({
         "_id": auction.auction_doc_id,
         "stages": [],
@@ -208,7 +207,13 @@ def prepare_auction_document(auction):
         auction.auction_document[key] = auction._auction_data["data"].get(
             key, ""
         )
-
+    if fast_forward:
+        DUTCH_TIMEDELTA = timedelta(minutes=10)
+        DUTCH_ROUNDS = 10
+        FIRST_PAUSE = timedelta(seconds=10)
+    else:
+        from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
+            DUTCH_ROUNDS, FIRST_PAUSE
     dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
     next_stage_timedelta = auction.startDate
     amount = auction.auction_document['value']['amount']

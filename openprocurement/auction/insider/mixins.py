@@ -95,24 +95,9 @@ class DutchDBServiceMixin(DBServiceMixin):
 
         self.get_auction_info(prepare=True)
         if self.worker_defaults.get('sandbox_mode', False):
-            submissionMethodDetails = self._auction_data['data'].get(
-                'submissionMethodDetails', ''
-            )
-            if submissionMethodDetails == 'quick(mode:no-auction)':
-                utils.post_results_data(self, with_auctions_results=False)
-                return 0
-            elif submissionMethodDetails == 'quick(mode:fast-forward)':
-                self.auction_document = utils.prepare_auction_document(self)
-
-                self.get_auction_info()
-                self.prepare_auction_stages_fast_forward()
-                self.save_auction_document()
-                utils.post_results_data(self, with_auctions_results=False)
-                utils.announce_results_data(self, None)
-                self.save_auction_document()
-                return
-
-        self.auction_document = utils.prepare_auction_document(self)
+            self.auction_document = utils.prepare_auction_document(self, fast_forward=True)
+        else:
+            self.auction_document = utils.prepare_auction_document(self)
         self.save_auction_document()
 
 
