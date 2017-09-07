@@ -254,14 +254,11 @@ def prepare_auction_document(auction):
                 END,
             ]):
         next_stage_timedelta += delta
-        stage = {
+        auction.auction_document['stages'].append({
             'start': next_stage_timedelta.isoformat(),
             'type': name,
             'time': ''
-        }
-        if name in [BESTBID, SEALEDBID]:
-            stage.update({"bids": []})
-        auction.auction_document['stages'].append(stage)
+        })
     return auction.auction_document
 
 

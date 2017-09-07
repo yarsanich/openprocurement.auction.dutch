@@ -132,7 +132,6 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
         if results:
             bids_information = utils.announce_results_data(self, results)
 
-                # self.approve_audit_info_on_announcement(approved=bids_information)
             if not self.debug:
                 if doc_id and bids_information:
                     if self.worker_defaults.get('with_document_service', False):
@@ -244,7 +243,7 @@ class DutchAuctionPhase(object):
                 )
                 return e
 
-    def end_dutch(self):
+    def end_dutch(self, stage=""):
         LOGGER.info(
             '---------------- End dutch phase ----------------',
         )
@@ -331,8 +330,7 @@ class SealedBidAuctionPhase(object):
                 )
             minimal_bids = sorting_by_amount(minimal_bids)
             self.auction_document['results'] = minimal_bids
-            self.auction_document['stages'][self.auction_document['current_stage']]['bids']\
-                = minimal_bids
+
             run_time = utils.update_stage(self)
             self.approve_audit_info_on_sealedbid(run_time)
             self.auction_document['current_phase'] = PREBESTBID
@@ -379,7 +377,6 @@ class BestBidAuctionPhase(object):
 
     def end_bestbid(self, stage):
         with utils.update_auction_document(self):
-
             
             all_bids = deepcopy(self._bids_data)
             minimal_bids = []
@@ -393,9 +390,6 @@ class BestBidAuctionPhase(object):
             minimal_bids = sorting_by_amount(minimal_bids)
 
             self.auction_document['results'] = minimal_bids
-            if not self.debug:
-                # TODO: post results data
-                pass
             run_time = utils.update_stage(self)
             self.approve_audit_info_on_bestbid(run_time)
         self.end_auction()
