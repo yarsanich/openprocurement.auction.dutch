@@ -36,7 +36,6 @@ app.logins_cache = {}
 def login():
     if 'bidder_id' in request.args and 'signature' in request.args:
         bidder_id = request.args['bidder_id']
-        app.config['auction'].bidders_data.append({'id': bidder_id})
 
         next_url = request.args.get('next') or request.referrer or None
         if 'X-Forwarded-Path' in request.headers:
@@ -76,6 +75,9 @@ def authorized():
         app.logger.info("Error Response from Oauth: {}".format(resp))
         return abort(403, 'Access denied')
     bidder_data = get_bidder_id(app, session)
+    bidder_id = bidder_data['bidder_id']
+    app.config['auction'].bidders_data.append({'id': bidder_id})
+    app.config['auction'].mapping[bidder_id] = len(app.config['auction'].mapping) + 1
     app.logger.info("Bidder {} with client_id {} authorized".format(
                     bidder_data['bidder_id'], session['client_id'],
                     ), extra=prepare_extra_journal_fields(request.headers))
@@ -167,9 +169,7 @@ def logout():
 
 @app.route('/postbid', methods=['POST'])
 def post_bid():
-    if app.config['auction'].debug:
-        return jsonify(app.form_handler())
-    elif 'remote_oauth' in session and 'client_id' in session:
+    if 'remote_oauth' in session and 'client_id' in session:
         bidder_data = get_bidder_id(app, session)
         if bidder_data and bidder_data['bidder_id']\
            == request.json['bidder_id']:
