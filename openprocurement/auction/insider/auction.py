@@ -223,11 +223,12 @@ class Auction(DutchDBServiceMixin,
         )
         if self.server:
             self.server.stop()
+        delete_mapping(self.worker_defaults,
+                       self.auction_doc_id)
+
         LOGGER.debug(
             "Clear mapping", extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
-        delete_mapping(self.worker_defaults,
-                       self.auction_doc_id)
 
         self.auction_document["current_stage"] = (len(
             self.auction_document["stages"]) - 1)
@@ -240,21 +241,13 @@ class Auction(DutchDBServiceMixin,
             'Audit data: \n {}'.format(yaml_dump(self.audit)),
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
-        if self.debug:
-            LOGGER.debug(
-                'Debug: put_auction_data disabled !!!',
-                extra={"JOURNAL_REQUEST_ID": self.request_id}
-            )
-            LOGGER.fatal("SLEEEP !!!")
-            sleep(10)
+        if self.put_auction_data():
             self.save_auction_document()
-        else:
-            if self.put_auction_data():
-                self.save_auction_document()
         LOGGER.debug(
             "Fire 'stop auction worker' event",
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
+
         self._end_auction_event.set()
 
     def cancel_auction(self):

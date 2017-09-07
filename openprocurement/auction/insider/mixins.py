@@ -119,26 +119,33 @@ class DutchDBServiceMixin(DBServiceMixin):
 class DutchPostAuctionMixin(PostAuctionServiceMixin):
 
     def put_auction_data(self):
-        if self.worker_defaults.get('with_document_service', False):
-            doc_id = self.upload_audit_file_with_document_service()
+        if not self.debug:
+            if self.worker_defaults.get('with_document_service', False):
+                doc_id = self.upload_audit_file_with_document_service()
+            else:
+                doc_id = self.upload_audit_file_without_document_service()
         else:
-            doc_id = self.upload_audit_file_without_document_service()
+            LOGGER.debug("Put auction data disabled")
 
         results = utils.post_results_data(self)
 
         if results:
             bids_information = utils.announce_results_data(self, results)
-            if doc_id and bids_information:
+
                 # self.approve_audit_info_on_announcement(approved=bids_information)
-                if self.worker_defaults.get('with_document_service', False):
-                    doc_id = self.upload_audit_file_with_document_service(
-                        doc_id
-                    )
-                else:
-                    doc_id = self.upload_audit_file_without_document_service(
-                        doc_id
-                    )
-                return True
+            if not self.debug:
+                if doc_id and bids_information:
+                    if self.worker_defaults.get('with_document_service', False):
+                        doc_id = self.upload_audit_file_with_document_service(
+                            doc_id
+                        )
+                    else:
+                        doc_id = self.upload_audit_file_without_document_service(
+                            doc_id
+                        )
+            else:
+                LOGGER.debug("Put auction data disabled")
+            return True
         else:
             LOGGER.info(
                 "Auctions results not approved",

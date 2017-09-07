@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
+import logging
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime
-from dateutil.tz import tzlocal
 
+from dateutil.tz import tzlocal
+from openprocurement.auction.utils import get_latest_bid_for_bidder
+from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
     PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID, END
@@ -11,6 +14,9 @@ from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
     DUTCH_ROUNDS, MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES,\
     DUTCH_DOWN_STEP, FIRST_PAUSE, SEALEDBID_TIMEDELTA,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
+
+
+LOGGER = logging.getLogger("Auction Worker")
 
 
 def prepare_results_stage(
@@ -41,22 +47,39 @@ def post_results_data(auction, with_auctions_results=True):
     if with_auctions_results:
         for index, bid_info in enumerate(auction._auction_data["data"]["bids"]):
             if bid_info.get('status', 'active') == 'active':
-                bidder_id = bid_info.get('bidder_id', '')
+                bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
                 if bidder_id:
-                    self._auction_data["data"]["bids"][index]["value"]["amount"] = auction._bids_data[bidder_id]['amount']
-                    self._auction_data["data"]["bids"][index]["date"] = auction._bids_data[bidder_id]['time']
-    data = {'data': {'bids': self._auction_data["data"]['bids']}}
+                    try:
+                        bid = get_latest_bid_for_bidder(auction.auction_document['results'], bidder_id)
+                    except IndexError:
+                        bid = ''
+                    if bid:
+                        auction._auction_data["data"]["bids"][index]["value"]["amount"] = bid['amount']
+                        auction._auction_data["data"]["bids"][index]["date"] = bid['time']
+    data = {'data': {'bids': auction._auction_data["data"]['bids']}}
     LOGGER.info(
         "Approved data: {}".format(data),
-        extra={"JOURNAL_REQUEST_ID": self.request_id,
+        extra={"JOURNAL_REQUEST_ID": auction.request_id,
                "MESSAGE_ID": AUCTION_WORKER_API_APPROVED_DATA}
     )
-    return make_request(
-        self.tender_url + '/auction', data=data,
-        user=self.worker_defaults["TENDERS_API_TOKEN"],
-        method='post',
-        request_id=self.request_id, session=self.session
-    )
+    if not auction.debug:
+        return make_request(
+            auction.tender_url + '/auction', data=data,
+            user=auction.worker_defaults["TENDERS_API_TOKEN"],
+            method='post',
+            request_id=auction.request_id,
+            session=auction.session
+        )
+    else:
+        LOGGER.info(
+            "Making request to api with params {}".format(
+                dict(
+                    method="post",
+                    url=auction.tender_url + '/auction',
+                    data=data
+                )
+        ))
+        return data
 
 
 def announce_results_data(auction, results=None):
@@ -73,7 +96,6 @@ def announce_results_data(auction, results=None):
         for bid in results["data"]["bids"]
         if bid.get("status", "active") == "active"
     ])
-
     for index, stage in enumerate(auction.auction_document['results']):
         if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
             auction.auction_document['results'][index].update({
