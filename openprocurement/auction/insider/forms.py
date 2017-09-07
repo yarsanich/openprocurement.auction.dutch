@@ -45,17 +45,13 @@ def validate_bid_value(form, field):
         current_amount = winner.get('amount')
         if not isinstance(current_amount, Decimal):
             current_amount = Decimal(str(current_amount))
-        app.logger.fatal("DUTCH WINNER: {}".format(current_amount))
         if field.data != Decimal('-1') and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
             form[field.name].errors.append(message)
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
-        if field.data <= Decimal('0.0') and field.data != Decimal('-1') or (
-                field.data == Decimal('-1') and form.data['bidder_id'] not in
-                form.auction._bids_data
-        ):
+        if field.data <= Decimal('0.0') and field.data != Decimal('-1'):
             message = u'To low value'
             form[field.name].errors.append(message)
             raise ValidationError(message)
@@ -96,11 +92,6 @@ def validate_bidder_id(form, field):
             message = u'Not allowed to post bid for dutch winner'
             form[field.name].errors.append(message)
             raise ValidationError(message)
-        if field.data in form.auction._bids_data and\
-           form.data['bid'] != Decimal('-1'):
-            if str(form.auction._bids_data[field.data]['amount']) == '-1':
-                return True
-            raise ValidationError("You've already passed a value")
         return True
     elif phase == DUTCH:
         return True
