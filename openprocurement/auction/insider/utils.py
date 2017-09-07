@@ -34,6 +34,8 @@ def prepare_results_stage(
     return stage
 
 
+prepare_bids_stage = prepare_results_stage
+
 def post_results_data(auction, with_auctions_results=True):
     """TODO: make me work"""
     if with_auctions_results:
@@ -230,11 +232,14 @@ def prepare_auction_document(auction):
                 END,
             ]):
         next_stage_timedelta += delta
-        auction.auction_document['stages'].append({
+        stage = {
             'start': next_stage_timedelta.isoformat(),
             'type': name,
             'time': ''
-        })
+        }
+        if name in [BESTBID, SEALEDBID]:
+            stage.update({"bids": []})
+        auction.auction_document['stages'].append(stage)
     return auction.auction_document
 
 
