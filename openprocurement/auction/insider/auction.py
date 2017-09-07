@@ -148,7 +148,7 @@ class Auction(DutchDBServiceMixin,
             elif stage['type'] == PRESEALEDBID:
                 name = 'End of dutch phase'
                 id = 'auction:{}'.format(PRESEALEDBID)
-                func = self.finish_dutch
+                func = self.end_dutch
             elif stage['type'] == SEALEDBID:
                 name = "Sealedbid phase"
                 func = self.switch_to_sealedbid
@@ -209,8 +209,18 @@ class Auction(DutchDBServiceMixin,
         for job in filter(filter_job, jobs):
             job.remove()
 
-    def finish_dutch(self, stage):
-        self.end_dutch()
+    def approve_audit_info_on_announcement(self):
+        self.audit['results'] = {
+            "time": datetime.now(tzlocal()).isoformat(),
+            "bids": []
+        }
+        for bid in self.auction_document['results']:
+            bid_result_audit = {
+                'bidder': bid['bidder_id'],
+                'amount': bid['amount'],
+                'time': bid['time']
+            }
+            self.audit['results']['bids'].append(bid_result_audit)
 
     def end_auction(self):
         LOGGER.info(
@@ -236,7 +246,7 @@ class Auction(DutchDBServiceMixin,
         LOGGER.debug(' '.join((
             'Document in end_stage: \n', yaml_dump(dict(self.auction_document))
         )), extra={"JOURNAL_REQUEST_ID": self.request_id})
-        # self.approve_audit_info_on_announcement()
+        self.approve_audit_info_on_announcement()
         LOGGER.info(
             'Audit data: \n {}'.format(yaml_dump(self.audit)),
             extra={"JOURNAL_REQUEST_ID": self.request_id}
