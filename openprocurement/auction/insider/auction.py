@@ -1,6 +1,7 @@
 import logging
 from requests import Session as RequestsSession
 from urlparse import urljoin
+from collections import defaultdict
 from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
@@ -19,7 +20,7 @@ from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     BestBidAuctionPhase
 from openprocurement.auction.insider.constants import REQUEST_QUEUE_SIZE,\
     REQUEST_QUEUE_TIMEOUT, DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
-    BESTBID, END, PRESTARTED
+    BESTBID, END, PRESTARTED, BIDS_KEYS_FOR_COPY
 from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_AUCTION,\
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
@@ -36,8 +37,7 @@ SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
                             logger=LOGGER)
 
 SCHEDULER.timezone = TIMEZONE
-END_DUTCH_PAUSE = 20
-BIDS_KEYS_FOR_COPY = ("bidder_id", "amount", "time", "dutch_winner")
+
 
 
 class Auction(DutchDBServiceMixin,
@@ -80,7 +80,7 @@ class Auction(DutchDBServiceMixin,
         self.audit = {}
         self.retries = 10
         self.mapping = {}
-        self._bids_data = {}
+        self._bids_data = defaultdict(list)
         LOGGER.info(self.debug)
         # auction phases controllers
 
@@ -229,13 +229,6 @@ class Auction(DutchDBServiceMixin,
         delete_mapping(self.worker_defaults,
                        self.auction_doc_id)
 
-        minimal_bids = sorting_by_amount(
-            self.auction_document['results']
-        )
-        self.auction_document["results"] = []
-        for item in minimal_bids:
-            bid_data = {k:v for k, v in item.items() if k in BIDS_KEYS_FOR_COPY}
-            self.auction_document["results"].append(prepare_results_stage(**bid_data))
         self.auction_document["current_stage"] = (len(
             self.auction_document["stages"]) - 1)
         self.auction_document['current_phase'] = END
