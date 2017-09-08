@@ -18,7 +18,8 @@
         "date": "2014-11-19T08:22:21.726234+00:00",
         "id": "c26d9eed99624c338ce0fca58a0aac32",
         "value": {
-          "currency": null,
+            "currency": null,
+	    "amount": 0,
             "valueAddedTaxIncluded": true
         },
 	  "tenderers": [
@@ -50,6 +51,7 @@
         "id": "e4456d02263441ffb2f00ceafa661bb2",
           "value": {
               "currency": null,
+	      	    "amount": 0,
               "valueAddedTaxIncluded": true
           },
 	  "tenderers": [

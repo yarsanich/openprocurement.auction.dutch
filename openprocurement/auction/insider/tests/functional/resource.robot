@@ -3,11 +3,11 @@ Library        Selenium2Library
 Library        Selenium2Screenshots
 Library        DebugLibrary
 Resource       users_keywords.robot
-Library        openprocurement.auction.tests.functional.service_keywords
+Library        openprocurement.auction.insider.tests.functional.service_keywords
 
 *** Variables ***
 ${USERS}
-${BROWSER}      chrome 
+${BROWSER}       chrome
 
 *** Keywords ***
 Підготовка тесту
@@ -40,28 +40,28 @@ ${BROWSER}      chrome
     sleep                      1s
 
 
-Дочекатись паузи перед ${round_id} раундом
+Дочекатистись паузи перед ${round_id} раундом
     Wait Until Page Contains    → ${round_id}    5 min
 
-Дочекатись завершення паузи перед ${round_id} раундом
+Дочекатистись завершення паузи перед ${round_id} раундом
     Wait Until Page Does Not Contain    → ${round_id}    5 min
 
 
-Дочекатись учасником початку стадії ставок
-    [Arguments]    ${timeout}=2 min
+Дочекатистись учасником початку стадії ставок
+    [Arguments]    ${timeout}=3 min
     Wait Until Page Contains        до закінчення вашої черги   ${timeout}
 
 
-Дочекатись учасником закінчення стадії ставок
-    [Arguments]    ${timeout}=2 min
+Дочекатистись учасником закінчення стадії ставок
+    [Arguments]    ${timeout}=3 min
     Wait Until Page Does Not Contain         до закінчення вашої черги   ${timeout}
 
-Дочекатись до завершення аукціону
+Дочекатистись до завершення аукціону
     [Arguments]    ${timeout}=5 min
     Wait Until Page Does Not Contain   Очікуємо на розкриття імен учасників.  ${timeout}
     Wait Until Page Contains      Аукціон завершився   ${timeout}
 
-Дочекатись до завершення аукціону без розкриття імен учасників
+Дочекатистись до завершення аукціону без розкриття імен учасників
     [Arguments]    ${timeout}=10 min
     Wait Until Page Contains      Очікуємо на розкриття імен учасників.  ${timeout}
 

@@ -1,6 +1,6 @@
 import json
 import yaml
-
+import sys
 from base64 import b64encode
 from libnacl.sign import Signer
 from urllib import quote
@@ -8,12 +8,8 @@ from urllib import quote
 from robot.libraries.BuiltIn import BuiltIn
 from Selenium2Library import utils
 
-from openprocurement.auction.utils import calculate_hash
-
-
 positions = [(0, 0), (960, 0), (0, 540), (960, 540)]
 size = (960, 1000)
-
 
 def prepare_tender_data():
     tender_file_path = BuiltIn().get_variable_value("${tender_file_path}")
@@ -26,24 +22,18 @@ def prepare_users_data(tender_data):
     with open(auction_worker_defaults) as auction_worker_defaults_file:
         auction_worker_defaults_info = yaml.load(auction_worker_defaults_file)
     users_data = {}
+    print "ldksjfklsdfldskfsdkl"
     for index, bid in enumerate(tender_data["bids"]):
-        if "lots" in tender_data:
-            lot_id_appendix = "_" + tender_data["lots"][0]["id"]
-        else:
-            lot_id_appendix = ""
-        auction_id = "11111111111111111111111111111111"
-
         signer = Signer(auction_worker_defaults_info["SIGNATURE_KEY"].decode('hex'))
         signature = quote(b64encode(signer.signature(str(bid['id']))))
         users_data[bid["id"]] = {
-            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
+            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].replace('auctions', 'insider-auctions').format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
                 bid["id"], signature
             ),
-            'amount': bid['value']['amount'],
+            'amount': bid['value'].get('amount', ''),
             'position': positions[index],
             'size': size
         }
-    print('users_data: ', json.dumps(users_data))
     return users_data
 
 
@@ -57,11 +47,11 @@ def Highlight_Element(locator):
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '3px dotted red';", element)
 
 
+
 def Clear_Highlight_Element(locator):
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
     element = seleniumlib._element_find(locator, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '';", element)
-
 
 def Highlight_Elements_With_Text_On_Time(text, time=2):
     from time import sleep
