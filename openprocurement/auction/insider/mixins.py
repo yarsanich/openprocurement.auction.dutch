@@ -23,7 +23,7 @@ from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, END, BESTBID, BIDS_KEYS_FOR_COPY
 
 
-LOGGER = logging.getLogger("Auction Worker")
+LOGGER = logging.getLogger("Auction Worker Insider")
 
 
 class DutchDBServiceMixin(DBServiceMixin):

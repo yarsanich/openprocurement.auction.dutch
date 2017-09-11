@@ -33,10 +33,10 @@ def run_insider(tender_file_path):
 TESTS = {
     "insider": {
         "worker_cmd": '{0}/bin/auction_insider planning {1}'
-                      ' {0}/etc/auction_worker_defaults.yaml'
+                      ' {0}/etc/auction_worker_insider.yaml'
                       ' --planning_procerude partial_db --auction_info {2}',
         "runner": run_insider,
-        'auction_worker_defaults': 'auction_worker_defaults:{0}/etc/auction_worker_defaults.yaml',
+        'auction_worker_defaults': 'auction_worker_defaults:{0}/etc/auction_worker_insider.yaml',
         'suite': PWD
     },
 }
