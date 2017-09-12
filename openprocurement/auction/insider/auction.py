@@ -31,7 +31,7 @@ from openprocurement.auction.insider.utils import prepare_audit,\
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
-LOGGER = logging.getLogger('Auction Worker')
+LOGGER = logging.getLogger('Auction Worker Insider')
 SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
                             executors={'default': AuctionsExecutor()},
                             logger=LOGGER)

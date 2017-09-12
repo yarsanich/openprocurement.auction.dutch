@@ -15,7 +15,7 @@ from openprocurement.auction.insider.constants import MULTILINGUAL_FIELDS,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
-LOGGER = logging.getLogger("Auction Worker")
+LOGGER = logging.getLogger("Auction Worker Insider")
 
 
 def prepare_results_stage(
