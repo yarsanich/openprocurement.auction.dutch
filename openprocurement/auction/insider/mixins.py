@@ -306,7 +306,7 @@ class SealedBidAuctionPhase(object):
 
             all_bids = deepcopy(self._bids_data)
             minimal_bids = []
-       
+
             for bid_id in all_bids.keys():
                 bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
                 bid['bidder_name'] = self.mapping[bid['bidder_id']]
@@ -329,6 +329,7 @@ class BestBidAuctionPhase(object):
                 "Updating dutch winner {bidder_id} with value {amount}"
                 " on {time}".format(**bid)
             )
+            bid['dutch_winner'] = True
             self._bids_data[bid['bidder_id']].append(bid)
             self.audit['timeline'][BESTBID]['bids'].append(bid)
             return True
@@ -362,10 +363,9 @@ class BestBidAuctionPhase(object):
 
     def end_bestbid(self, stage):
         with utils.update_auction_document(self):
-            
             all_bids = deepcopy(self._bids_data)
             minimal_bids = []
-       
+
             for bid_id in all_bids.keys():
                 bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
                 bid['bidder_name'] = self.mapping[bid['bidder_id']]
