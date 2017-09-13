@@ -22,9 +22,6 @@ ENTRY_POINTS = {
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.insider.tests.functional.main:includeme'
-    ],
-    'openprocurement.auction.routes': [
-        'insider = openprocurement.auction.insider.views:includeme',
     ]
 }
 
