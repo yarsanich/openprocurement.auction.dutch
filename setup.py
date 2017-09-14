@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = '1.0.0a1.dev1'
+VERSION = '1.0.0a1.dev2'
 INSTALL_REQUIRES = [
     'setuptools',
     'openprocurement.auction',
@@ -22,9 +22,6 @@ ENTRY_POINTS = {
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.insider.tests.functional.main:includeme'
-    ],
-    'openprocurement.auction.routes': [
-        'insider = openprocurement.auction.insider.views:includeme',
     ]
 }
 
