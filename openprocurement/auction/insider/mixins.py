@@ -319,11 +319,7 @@ class SealedBidAuctionPhase(object):
             self.auction_document['results'] = minimal_bids
             # save winner to stages in auction_document
             self.auction_document['stages'][self.auction_document['current_stage']].update(
-                {
-                    'bidder_id': max_bid['bidder_id'],
-                    'amount': max_bid['amount'],
-                    'sealedbid_winner': True
-                }
+                utils.prepare_results_stage(**max_bid)
             )
             run_time = utils.update_stage(self)
             self.approve_audit_info_on_sealedbid(run_time)

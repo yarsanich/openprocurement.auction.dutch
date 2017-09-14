@@ -23,7 +23,8 @@ def prepare_results_stage(
         bidder_name="",
         amount="",
         time="",
-        dutch_winner=""):
+        dutch_winner="",
+        sealedbid_winner=""):
     stage = dict(
         bidder_id=bidder_id,
         time=str(time),
@@ -36,6 +37,8 @@ def prepare_results_stage(
     )
     if dutch_winner:
         stage['dutch_winner'] = True
+    elif sealedbid_winner:
+        stage['sealedbid_winner'] = True
     return stage
 
 
@@ -91,7 +94,7 @@ def announce_results_data(auction, results=None):
             session=auction.session
         )
     bids_information = dict([
-        (bid["id"], bid["tenderers"])
+        bid["id"]
         for bid in results["data"]["bids"]
         if bid.get("status", "active") == "active"
     ])
@@ -99,7 +102,7 @@ def announce_results_data(auction, results=None):
         if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
             auction.auction_document['results'][index].update({
                 "label": {
-                    'uk':bids_information[stage['bidder_id']][0]["name"],
+                    'uk': bids_information[stage['bidder_id']][0]["name"],
                     'en': bids_information[stage['bidder_id']][0]["name"],
                     'ru': bids_information[stage['bidder_id']][0]["name"],
                 }
