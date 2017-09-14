@@ -94,7 +94,7 @@ def announce_results_data(auction, results=None):
             session=auction.session
         )
     bids_information = dict([
-        bid["id"]
+        (bid["id"], bid["tenderers"])
         for bid in results["data"]["bids"]
         if bid.get("status", "active") == "active"
     ])
