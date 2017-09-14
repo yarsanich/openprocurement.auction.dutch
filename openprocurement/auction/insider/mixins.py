@@ -23,7 +23,7 @@ from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, END, BESTBID, BIDS_KEYS_FOR_COPY
 
 
-LOGGER = logging.getLogger("Auction Worker")
+LOGGER = logging.getLogger("Auction Worker Insider")
 
 
 class DutchDBServiceMixin(DBServiceMixin):
@@ -306,16 +306,21 @@ class SealedBidAuctionPhase(object):
 
             all_bids = deepcopy(self._bids_data)
             minimal_bids = []
-       
+            max_bid = {'amount': 0}  # init sealedbid winner bid
             for bid_id in all_bids.keys():
                 bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
                 bid['bidder_name'] = self.mapping[bid['bidder_id']]
                 minimal_bids.append(
                     utils.prepare_results_stage(**bid)
                 )
+                # find a winner
+                max_bid = max([max_bid, bid], key=lambda bid: bid['amount'])
             minimal_bids = sorting_by_amount(minimal_bids)
             self.auction_document['results'] = minimal_bids
-
+            # save winner to stages in auction_document
+            self.auction_document['stages'][self.auction_document['current_stage']].update(
+                utils.prepare_results_stage(**max_bid)
+            )
             run_time = utils.update_stage(self)
             self.approve_audit_info_on_sealedbid(run_time)
             self.auction_document['current_phase'] = PREBESTBID
@@ -362,10 +367,10 @@ class BestBidAuctionPhase(object):
 
     def end_bestbid(self, stage):
         with utils.update_auction_document(self):
-            
+
             all_bids = deepcopy(self._bids_data)
             minimal_bids = []
-       
+
             for bid_id in all_bids.keys():
                 bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
                 bid['bidder_name'] = self.mapping[bid['bidder_id']]

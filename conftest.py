@@ -9,9 +9,9 @@ import couchdb
 from dateutil.tz import tzlocal
 from StringIO import StringIO
 
-from openprocurement.auction.dutch.auction import Auction, SCHEDULER
-from openprocurement.auction.dutch.mixins import LOGGER
-from openprocurement.auction.dutch.tests.data.data import tender_data
+from openprocurement.auction.insider.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.mixins import LOGGER
+from openprocurement.auction.insider.tests.data.data import tender_data
 
 
 def update_auctionPeriod(data):
@@ -24,7 +24,7 @@ def update_auctionPeriod(data):
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
-worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/dutch/tests/data/auction_worker_defaults.yaml")
+worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/insider/tests/data/auction_worker_insider.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
