@@ -27,7 +27,7 @@ def prepare_users_data(tender_data):
         signer = Signer(auction_worker_defaults_info["SIGNATURE_KEY"].decode('hex'))
         signature = quote(b64encode(signer.signature(str(bid['id']))))
         users_data[bid["id"]] = {
-            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].replace('auctions', 'insider-auctions').format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
+            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
                 bid["id"], signature
             ),
             'amount': bid['value'].get('amount', ''),
