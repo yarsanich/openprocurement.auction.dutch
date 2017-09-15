@@ -335,6 +335,7 @@ class BestBidAuctionPhase(object):
                 "Updating dutch winner {bidder_id} with value {amount}"
                 " on {time}".format(**bid)
             )
+            bid['dutch_winner'] = True
             self._bids_data[bid['bidder_id']].append(bid)
             self.audit['timeline'][BESTBID]['bids'].append(bid)
             return True
