@@ -6,6 +6,8 @@ import pytest
 import yaml
 import couchdb
 
+from collections import namedtuple
+
 from dateutil.tz import tzlocal
 from StringIO import StringIO
 
@@ -40,6 +42,15 @@ def auction():
         auction_data=tender_data
     )
 
+
+@pytest.fixture(scope='function')
+def app(auction, bids_form):
+    App = namedtuple('App', 'config logger bids_form')
+    form = BidsForm()
+    config = {"auction": None}
+    app = App(config=config, logger=LOGGER, bids_form=form)
+
+    return app
 
 @pytest.fixture(scope='function')
 def db(request):
