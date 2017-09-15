@@ -17,9 +17,9 @@ cache:
 before_install:
   - pip install setuptools==29.0.1
   - python2 bootstrap.py
-  - mv openprocurement/auction/dutch/tests/data/auction_worker_travis.yaml openprocurement/auction/dutch/tests/data/auction_worker_defaults.yaml
+  - mv openprocurement/auction/insider/tests/data/auction_worker_travis.yaml openprocurement/auction/insider/tests/data/auction_worker_defaults.yaml
 install:
   - bin/buildout -N
   - curl -X PUT 0.0.0.0:5984/auctions
 script:
-  - bin/pytest openprocurement/auction/dutch/tests/unit/
+  - bin/pytest openprocurement/auction/insider/tests/unit/

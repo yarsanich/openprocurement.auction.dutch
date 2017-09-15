@@ -9,9 +9,10 @@ import couchdb
 from dateutil.tz import tzlocal
 from StringIO import StringIO
 
-from openprocurement.auction.dutch.auction import Auction, SCHEDULER
-from openprocurement.auction.dutch.mixins import LOGGER
-from openprocurement.auction.dutch.tests.data.data import tender_data
+from openprocurement.auction.insider.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.forms import BidsForm
+from openprocurement.auction.insider.mixins import LOGGER
+from openprocurement.auction.insider.tests.data.data import tender_data
 
 
 def update_auctionPeriod(data):
@@ -24,7 +25,7 @@ def update_auctionPeriod(data):
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
-worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/dutch/tests/data/auction_worker_insider.yaml")
+worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/insider/tests/data/auction_worker_insider.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
@@ -36,8 +37,7 @@ def auction():
     yield Auction(
         tender_id=tender_data['data']['tenderID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
-        auction_data=tender_data,
-        lot_id=False
+        auction_data=tender_data
     )
 
 
@@ -71,6 +71,14 @@ def logger():
 @pytest.fixture(scope='function')
 def scheduler():
     return SCHEDULER
+
+
+@pytest.fixture(scope='function')
+def bids_form(auction, db):
+    form = BidsForm()
+    auction.prepare_auction_document()
+    form.document = auction.auction_document
+    return form
 
 
 def pytest_addoption(parser):
