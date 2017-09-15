@@ -318,6 +318,7 @@ class SealedBidAuctionPhase(object):
             minimal_bids = sorting_by_amount(minimal_bids)
             self.auction_document['results'] = minimal_bids
             # save winner to stages in auction_document
+            max_bid['sealedbid_winner'] = True
             self.auction_document['stages'][self.auction_document['current_stage']].update(
                 utils.prepare_results_stage(**max_bid)
             )
