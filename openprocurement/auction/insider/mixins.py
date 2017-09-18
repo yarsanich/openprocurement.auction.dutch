@@ -42,7 +42,7 @@ class DutchDBServiceMixin(DBServiceMixin):
 
             auction_data = get_tender_data(
                 self.tender_url + '/auction',
-                user=self.worker_defaults["TENDERS_API_TOKEN"],
+                user=self.worker_defaults["resource_api_token"],
                 request_id=self.request_id,
                 session=self.session
             )
