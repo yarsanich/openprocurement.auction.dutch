@@ -70,7 +70,7 @@ class LogInterceptor(object):
     def __init__(self, logger):
         self.log_capture_string = StringIO()
         self.test_handler = logging.StreamHandler(self.log_capture_string)
-        self.test_handler.setLevel(logging.INFO)
+        self.test_handler.setLevel(logging.DEBUG)
         logger.addHandler(self.test_handler)
 
 
