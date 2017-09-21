@@ -6,6 +6,8 @@ import pytest
 import yaml
 import couchdb
 
+from collections import namedtuple
+
 from dateutil.tz import tzlocal
 from StringIO import StringIO
 
@@ -25,7 +27,7 @@ def update_auctionPeriod(data):
 
 PWD = os.path.dirname(os.path.realpath(__file__))
 
-worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/insider/tests/data/auction_worker_insider.yaml")
+worker_defaults_file_path = os.path.join(PWD, "openprocurement/auction/insider/tests/data/auction_worker_defaults.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
 
@@ -40,6 +42,15 @@ def auction():
         auction_data=tender_data
     )
 
+
+@pytest.fixture(scope='function')
+def app(auction, bids_form):
+    App = namedtuple('App', 'config logger bids_form')
+    form = BidsForm()
+    config = {"auction": None}
+    app = App(config=config, logger=LOGGER, bids_form=form)
+
+    return app
 
 @pytest.fixture(scope='function')
 def db(request):
