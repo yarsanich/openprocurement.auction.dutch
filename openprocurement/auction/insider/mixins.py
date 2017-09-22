@@ -42,7 +42,7 @@ class DutchDBServiceMixin(DBServiceMixin):
 
             auction_data = get_tender_data(
                 self.tender_url + '/auction',
-                user=self.worker_defaults["TENDERS_API_TOKEN"],
+                user=self.worker_defaults["resource_api_token"],
                 request_id=self.request_id,
                 session=self.session
             )
@@ -318,6 +318,7 @@ class SealedBidAuctionPhase(object):
             minimal_bids = sorting_by_amount(minimal_bids)
             self.auction_document['results'] = minimal_bids
             # save winner to stages in auction_document
+            max_bid['sealedbid_winner'] = True
             self.auction_document['stages'][self.auction_document['current_stage']].update(
                 utils.prepare_results_stage(**max_bid)
             )
@@ -334,6 +335,7 @@ class BestBidAuctionPhase(object):
                 "Updating dutch winner {bidder_id} with value {amount}"
                 " on {time}".format(**bid)
             )
+            bid['dutch_winner'] = True
             self._bids_data[bid['bidder_id']].append(bid)
             self.audit['timeline'][BESTBID]['bids'].append(bid)
             return True

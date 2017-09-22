@@ -5,7 +5,8 @@ from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal
-from openprocurement.auction.utils import get_latest_bid_for_bidder
+from openprocurement.auction.utils import get_latest_bid_for_bidder,\
+    make_request
 from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
@@ -67,7 +68,7 @@ def post_results_data(auction, with_auctions_results=True):
     if not auction.debug:
         return make_request(
             auction.tender_url + '/auction', data=data,
-            user=auction.worker_defaults["TENDERS_API_TOKEN"],
+            user=auction.worker_defaults["resource_api_token"],
             method='post',
             request_id=auction.request_id,
             session=auction.session

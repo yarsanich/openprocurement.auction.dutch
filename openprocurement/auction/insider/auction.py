@@ -57,7 +57,7 @@ class Auction(DutchDBServiceMixin,
         self.auction_doc_id = tender_id
         self._end_auction_event = Event()
         self.tender_url = urljoin(
-            worker_defaults["resource_api_version"],
+            worker_defaults["resource_api_server"],
             '/api/{0}/auctions/{1}'.format(
                 worker_defaults["resource_api_version"], tender_id
             )
