@@ -8,8 +8,8 @@ from urllib import quote
 from robot.libraries.BuiltIn import BuiltIn
 from Selenium2Library import utils
 
-positions = [(0, 0), (960, 0), (0, 540), (960, 540)]
-size = (960, 1000)
+positions = [(0, 0), (300, 0), (600, 0), (900, 0), (1200, 0)]
+size = (300, 1200)
 
 def prepare_tender_data():
     tender_file_path = BuiltIn().get_variable_value("${tender_file_path}")
@@ -22,7 +22,6 @@ def prepare_users_data(tender_data):
     with open(auction_worker_defaults) as auction_worker_defaults_file:
         auction_worker_defaults_info = yaml.load(auction_worker_defaults_file)
     users_data = {}
-    print "ldksjfklsdfldskfsdkl"
     for index, bid in enumerate(tender_data["bids"]):
         signer = Signer(auction_worker_defaults_info["SIGNATURE_KEY"].decode('hex'))
         signature = quote(b64encode(signer.signature(str(bid['id']))))
@@ -38,7 +37,7 @@ def prepare_users_data(tender_data):
 
 
 def convert_amount_to_number(amount_string):
-    return float(amount_string.replace(' ', '').replace(',', '.'))
+    return float(amount_string.replace(' ', '').replace(',', '.').replace("'",''))
 
 
 def Highlight_Element(locator):
@@ -47,11 +46,11 @@ def Highlight_Element(locator):
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '3px dotted red';", element)
 
 
-
 def Clear_Highlight_Element(locator):
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')
     element = seleniumlib._element_find(locator, True, True)
     seleniumlib._current_browser().execute_script("arguments[0].style['outline'] = '';", element)
+
 
 def Highlight_Elements_With_Text_On_Time(text, time=2):
     from time import sleep
