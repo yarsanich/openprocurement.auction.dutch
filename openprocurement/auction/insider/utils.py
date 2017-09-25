@@ -1,18 +1,20 @@
 # -*- coding: utf-8 -*-
 import logging
+import sys
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal
 from openprocurement.auction.utils import get_latest_bid_for_bidder,\
-    make_request
-from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
+    make_request, get_tender_data
+from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA,\
+    AUCTION_WORKER_API_AUCTION_CANCEL, AUCTION_WORKER_API_AUCTION_NOT_EXIST, AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
     PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID, END
 from openprocurement.auction.insider.constants import MULTILINGUAL_FIELDS,\
-    ADDITIONAL_LANGUAGES, DUTCH_DOWN_STEP, FIRST_PAUSE, SEALEDBID_TIMEDELTA,\
+    ADDITIONAL_LANGUAGES, DUTCH_DOWN_STEP, SEALEDBID_TIMEDELTA,\
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 
 
@@ -45,10 +47,11 @@ def prepare_results_stage(
 
 prepare_bids_stage = prepare_results_stage
 
+
 def post_results_data(auction, with_auctions_results=True):
     """TODO: make me work"""
     if with_auctions_results:
-        for index, bid_info in enumerate(auction._auction_data["data"]["bids"]):
+        for index, bid_info in enumerate(auction._auction_data["data"].get("bids", [])):
             if bid_info.get('status', 'active') == 'active':
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
                 if bidder_id:
@@ -59,7 +62,7 @@ def post_results_data(auction, with_auctions_results=True):
                     if bid:
                         auction._auction_data["data"]["bids"][index]["value"]["amount"] = bid['amount']
                         auction._auction_data["data"]["bids"][index]["date"] = bid['time']
-    data = {'data': {'bids': auction._auction_data["data"]['bids']}}
+    data = {'data': {'bids': auction._auction_data["data"].get('bids', [])}}
     LOGGER.info(
         "Approved data: {}".format(data),
         extra={"JOURNAL_REQUEST_ID": auction.request_id,
@@ -95,8 +98,8 @@ def announce_results_data(auction, results=None):
             session=auction.session
         )
     bids_information = dict([
-        (bid["id"], bid["tenderers"])
-        for bid in results["data"]["bids"]
+        (bid["id"], bid.get("tenderers"))
+        for bid in results["data"].get("bids", [])
         if bid.get("status", "active") == "active"
     ])
     for index, stage in enumerate(auction.auction_document['results']):
@@ -150,11 +153,9 @@ def prepare_audit(auction):
 
 def get_dutch_winner(auction_document):
     try:
-        return filter(
-            lambda bid: bid.get('dutch_winner', False),
-            auction_document['results']
-        )[0]
-    except Exception:
+        return [bid for bid in auction_document['results']
+                if bid.get('dutch_winner', False)][0]
+    except IndexError:
         return {}
 
 
@@ -222,8 +223,8 @@ def prepare_auction_document(auction, fast_forward=False):
     next_stage_timedelta = auction.startDate
     amount = auction.auction_document['value']['amount']
     auction.auction_document['stages'] = [prepare_service_stage(
-            start=auction.startDate.isoformat(),
-            type="pause"
+        start=auction.startDate.isoformat(),
+        type="pause"
     )]
     next_stage_timedelta += FIRST_PAUSE
     for index in range(DUTCH_ROUNDS + 1):
@@ -315,14 +316,13 @@ def get_auction_info(auction, prepare=False):
             auction._end_auction_event.set()
             sys.exit(1)
     if 'bids' in auction._auction_data['data']:
-        pass
-    LOGGER.info(
-        "Bidders count: {}".format(auction.bidders_count),
-        extra={
-            "JOURNAL_REQUEST_ID": auction.request_id,
-            "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
-        }
-    )
+        LOGGER.info(
+            "Bidders count: {}".format(auction.bidders_count),
+            extra={
+                "JOURNAL_REQUEST_ID": auction.request_id,
+                "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
+            }
+        )
 
     auction.startDate = auction.convert_datetime(
         auction._auction_data['data']['auctionPeriod']['startDate']
@@ -331,7 +331,7 @@ def get_auction_info(auction, prepare=False):
     if not prepare:
         auction.bidders_data = []
 
-        for bid in auction._auction_data['data']['bids']:
+        for bid in auction._auction_data['data'].get('bids',[]):
             if bid.get('status', 'active') == 'active':
                 auction.bidders_data.append({
                     'id': bid['id'],
@@ -339,5 +339,5 @@ def get_auction_info(auction, prepare=False):
                     'value': bid['value'],
                     'owner': bid.get('owner', '')
                 })
-        for index, uid in enumerate(auction.bidders_data):
+        for index, _ in enumerate(auction.bidders_data):
             auction.mapping[auction.bidders_data[index]['id']] = str(index + 1)

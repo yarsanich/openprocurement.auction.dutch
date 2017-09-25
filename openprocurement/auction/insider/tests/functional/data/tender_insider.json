@@ -16,7 +16,7 @@
     "bids": [
       {
         "date": "2014-11-19T08:22:21.726234+00:00",
-        "id": "c26d9eed99624c338ce0fca58a0aac32",
+        "id": "e4456d02263441ffb3f00ceafa661bb2",
         "value": {
             "currency": null,
 	    "amount": 0,
@@ -35,7 +35,7 @@
 		      "uri": "http://9665642342.promtest.ua",
 		      "legalName": "Фомин-Александрова"
 		  },
-		  "name": "Концертний заклад культури 'Муніципальна академічна чоловіча хорова капела ім. Л.М. Ревуцького'",
+		  "name": "МФ ДП \"АМПУ\" (адміністрація Миколаївського МП)",
 		  "address": {
 		      "postalCode": "849999",
 		      "countryName": "Україна",
@@ -67,7 +67,7 @@
 		      "uri": "http://9665642342.promtest.ua",
 		      "legalName": "Фомин-Александрова"
 		  },
-		  "name": "КОМУНАЛЬНЕ ПІДПРИЄМСТВО 'КИЇВПАСТРАНС'",
+		  "name": "ПрАО \"МТС Україна\"",
 		  "address": {
 		      "postalCode": "849999",
 		      "countryName": "Україна",
@@ -77,6 +77,102 @@
 		  }
 	      }
 	  ]
+      },
+      {
+        "date": "2014-11-19T08:22:24.038426+00:00",
+        "id": "e4456d02263441ffb2f00ceafa771bb2",
+          "value": {
+              "currency": null,
+              "amount": 0,
+              "valueAddedTaxIncluded": true
+          },
+    "tenderers": [
+        {
+      "contactPoint": {
+          "telephone": "+380139815286",
+          "name": "Эммануил Капустина",
+          "email": "automation+4077486456@smartweb.com.ua"
+      },
+      "identifier": {
+          "scheme": "UA-EDR",
+          "id": "46171",
+          "uri": "http://9665642342.promtest.ua",
+          "legalName": "Фомин-Александрова"
+      },
+      "name": "ПрАТ \"КИЇВСТАР\"",
+      "address": {
+          "postalCode": "849999",
+          "countryName": "Україна",
+          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
+          "region": "Донецька область",
+          "locality": "Donetsk"
+      }
+        }
+    ]
+      },
+      {
+        "date": "2014-11-19T08:22:24.038426+00:00",
+        "id": "a96a4681a1ef4b9fba6b598bd1d39406",
+          "value": {
+              "currency": null,
+              "amount": 0,
+              "valueAddedTaxIncluded": true
+          },
+    "tenderers": [
+        {
+      "contactPoint": {
+          "telephone": "+380139815286",
+          "name": "Эммануил Капустина",
+          "email": "automation+4077486456@smartweb.com.ua"
+      },
+      "identifier": {
+          "scheme": "UA-EDR",
+          "id": "46171",
+          "uri": "http://9665642342.promtest.ua",
+          "legalName": "Фомин-Александрова"
+      },
+      "name": "ТОВ \"ЛАЙФСЕЛЛ\"",
+      "address": {
+          "postalCode": "849999",
+          "countryName": "Україна",
+          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
+          "region": "Донецька область",
+          "locality": "Donetsk"
+      }
+        }
+    ]
+      },
+      {
+        "date": "2014-11-19T08:22:24.038426+00:00",
+        "id": "c26d9eed99624c338ce0fca58a0aac32",
+          "value": {
+              "currency": null,
+              "amount": 0,
+              "valueAddedTaxIncluded": true
+          },
+    "tenderers": [
+        {
+      "contactPoint": {
+          "telephone": "+380139815286",
+          "name": "Эммануил Капустина",
+          "email": "automation+4077486456@smartweb.com.ua"
+      },
+      "identifier": {
+          "scheme": "UA-EDR",
+          "id": "46171",
+          "uri": "http://9665642342.promtest.ua",
+          "legalName": "Фомин-Александрова"
+      },
+      "name": "КОМУНАЛЬНЕ ПІДПРИЄМСТВО 'КИЇВПАСТРАНС'",
+      "address": {
+          "postalCode": "849999",
+          "countryName": "Україна",
+          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
+          "region": "Донецька область",
+          "locality": "Donetsk"
+      }
+        }
+    ]
       }
     ],
       "procuringEntity": {

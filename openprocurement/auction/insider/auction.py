@@ -70,7 +70,7 @@ class Auction(DutchDBServiceMixin,
             self.debug = False
         self.bids_actions = BoundedSemaphore()
         self.session = RequestsSession()
-        self.features = {} # bw
+        self.features = {}  # bw
         self.worker_defaults = worker_defaults
         if self.worker_defaults.get('with_document_service', False):
             self.session_ds = RequestsSession()
@@ -209,7 +209,7 @@ class Auction(DutchDBServiceMixin,
         for job in filter(filter_job, jobs):
             job.remove()
 
-    def approve_audit_info_on_announcement(self):
+    def approve_audit_info_on_announcement(self, approved={}):
         self.audit['results'] = {
             "time": datetime.now(tzlocal()).isoformat(),
             "bids": []
@@ -220,6 +220,17 @@ class Auction(DutchDBServiceMixin,
                 'amount': bid['amount'],
                 'time': bid['time']
             }
+            if bid.get('dutch_winner', False):
+                bid_result_audit['dutch_winner'] = True
+            if bid.get('sealedbid_winner', False):
+                bid_result_audit['sealedbid_winner'] = True
+            if approved:
+                bid_result_audit["identification"] = approved.get(
+                    bid['bidder_id'], {}
+                ).get('tenderers', [])
+                bid_result_audit["owner"] = approved.get(
+                    bid['bidder_id'], {}
+                ).get('owner', '')
             self.audit['results']['bids'].append(bid_result_audit)
 
     def end_auction(self):
