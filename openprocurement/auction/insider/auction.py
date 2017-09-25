@@ -70,7 +70,7 @@ class Auction(DutchDBServiceMixin,
             self.debug = False
         self.bids_actions = BoundedSemaphore()
         self.session = RequestsSession()
-        self.features = {} # bw
+        self.features = {}  # bw
         self.worker_defaults = worker_defaults
         if self.worker_defaults.get('with_document_service', False):
             self.session_ds = RequestsSession()
