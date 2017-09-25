@@ -1,43 +1,125 @@
 # -*- coding: utf-8 -*-
-tender_data = {u'data': {u'auctionPeriod': {u'endDate': None,
-                              u'startDate': u'2017-07-03T17:32:05.661358+03:00'},
-           u'bids': [{u'date': u'2014-11-19T08:22:21.726234+00:00',
-                      u'id': u'd3ba84c66c9e4f34bfb33cc3c686f137',
-                      u'value': {u'amount': 475000.0,
-                                 u'currency': None,
-                                 u'valueAddedTaxIncluded': True}},
-                     {u'date': u'2014-11-19T08:22:24.038426+00:00',
-                      u'id': u'5675acc9232942e8940a034994ad883e',
-                      u'value': {u'amount': 480000.0,
-                                 u'currency': None,
-                                 u'valueAddedTaxIncluded': True}}],
-           u'dateModified': u'2014-11-19T08:22:24.866669+00:00',
-           u'description': u'Tender Description',
-           u'items': [{u'additionalClassifications': [{u'description': u'\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c',
-                                                       u'id': u'55.51.10.300',
-                                                       u'scheme': u'\u0414\u041a\u041f\u041f'}],
-                       u'classification': {u'description': u'\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0437 \u0445\u0430\u0440\u0447\u0443\u0432\u0430\u043d\u043d\u044f \u0443 \u0448\u043a\u043e\u043b\u0430\u0445',
-                                           u'id': u'55523100-3',
-                                           u'scheme': u'CPV'},
-                       u'description': u'\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c',
-                       u'quantity': 5,
-                       u'unit': {u'name': u'item'}}],
-           u'procurementMethodType': u'belowThreshold',
-           u'procuringEntity': {u'address': {u'countryName': u'\u0423\u043a\u0440\u0430\u0457\u043d\u0430',
-                                             u'locality': u'\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f',
-                                             u'postalCode': u'21027',
-                                             u'region': u'\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f',
-                                             u'streetAddress': u'\u0432\u0443\u043b. \u0421\u0442\u0430\u0445\u0443\u0440\u0441\u044c\u043a\u043e\u0433\u043e. 22'},
-                                u'identifier': {u'id': u'21725150',
-                                                u'legalName': u'\u0417\u0430\u043a\u043b\u0430\u0434 "\u0417\u0430\u0433\u0430\u043b\u044c\u043d\u043e\u043e\u0441\u0432\u0456\u0442\u043d\u044f \u0448\u043a\u043e\u043b\u0430 \u0406-\u0406\u0406\u0406 \u0441\u0442\u0443\u043f\u0435\u043d\u0456\u0432 \u2116 10 \u0412\u0456\u043d\u043d\u0438\u0446\u044c\u043a\u043e\u0457 \u043c\u0456\u0441\u044c\u043a\u043e\u0457 \u0440\u0430\u0434\u0438"',
-                                                u'scheme': u'https://ns.openprocurement.org/ua/edrpou',
-                                                u'uri': u'http://sch10.edu.vn.ua/'},
-                                u'name': u'\u0417\u041e\u0421\u0428 #10 \u043c.\u0412\u0456\u043d\u043d\u0438\u0446\u0456'},
-           u'tenderID': u'UA-11111',
-           u'title': u'Tender Title',
-           u'value': {u'amount': 500000.0,
-                      u'currency': u'UAH',
-                      u'valueAddedTaxIncluded': True}}}
+tender_data = {
+    "data": {
+        "tenderID": "UA-11111",
+        "description": "Tender Description",
+        "title": "Tender Title",
+        "procurementMethodType": "dgfInsider",
+        "minimalStep": {
+            "currency": "UAH",
+            "amount": 35000.0,
+            "valueAddedTaxIncluded": True
+        },
+        "auctionPeriod": {
+            "startDate": "2016-12-26T15:50:14.003746+02:00",
+            "endDate": None
+        },
+        "bids": [{
+            "date": "2014-11-19T08:22:21.726234+00:00",
+            "id": "c26d9eed99624c338ce0fca58a0aac32",
+            "value": {
+                "currency": None,
+                "amount": 0,
+                "valueAddedTaxIncluded": True
+            },
+            "tenderers": [{
+                "contactPoint": {
+                    "telephone": "+380139815286",
+                    "name": "Эммануил Капустина",
+                    "email": "automation+4077486456@smartweb.com.ua"
+                },
+                "identifier": {
+                    "scheme": "UA-EDR",
+                    "id": "46171",
+                    "uri": "http://9665642342.promtest.ua",
+                    "legalName": "Фомин-Александрова"
+                },
+                "name":
+                    "Концертний заклад культури 'Муніципальна академічна " \
+                    "чоловіча хорова капела ім. Л.М. Ревуцького'",
+                "address": {
+                    "postalCode": "849999",
+                    "countryName": "Україна",
+                    "streetAddress": "6973 Афанасьева Mountain Apt. 965",
+                    "region": "Донецька область",
+                    "locality": "Donetsk"
+                }
+            }]},
+            {
+            "date": "2014-11-19T08:22:24.038426+00:00",
+            "id": "e4456d02263441ffb2f00ceafa661bb2",
+            "value": {
+                    "currency": None,
+                    "amount": 0,
+                    "valueAddedTaxIncluded": True
+            },
+            "tenderers": [{
+                "contactPoint": {
+                    "telephone": "+380139815286",
+                    "name": "Эммануил Капустина",
+                    "email": "automation+4077486456@smartweb.com.ua"
+                },
+                "identifier": {
+                    "scheme": "UA-EDR",
+                    "id": "46171",
+                    "uri": "http://9665642342.promtest.ua",
+                    "legalName": "Фомин-Александрова"
+                },
+                "name": "КОМУНАЛЬНЕ ПІДПРИЄМСТВО 'КИЇВПАСТРАНС'",
+                "address": {
+                    "postalCode": "849999",
+                    "countryName": "Україна",
+                    "streetAddress": "6973 Афанасьева Mountain Apt. 965",
+                    "region": "Донецька область",
+                    "locality": "Donetsk"
+                }
+            }]}
+        ],
+        "procuringEntity": {
+            "identifier": {
+                "scheme": "https://ns.openprocurement.org/ua/edrpou",
+                "id": "21725150",
+                "uri": "http://sch10.edu.vn.ua/",
+                "legalName":
+                    "Заклад 'Загальноосвітня школа І-ІІІ ступенів № 10 " \
+                    "Вінницької міської ради'"
+            },
+            "name": "ЗОСШ #10 м.Вінниці",
+            "address": {
+                "postalCode": "21027",
+                "countryName": "Україна",
+                "streetAddress": "вул. Стахурського. 22",
+                "region": "м. Вінниця",
+                "locality": "м. Вінниця"
+            }
+        },
+        "items": [{
+            "unit": {
+                "name": "item"
+            },
+            "additionalClassifications": [{
+                "scheme": "ДКПП",
+                "id": "55.51.10.300",
+                "description": "Послуги шкільних їдалень"
+            }],
+            "description": "Послуги шкільних їдалень",
+            "classification": {
+                "scheme": "CPV",
+                "id": "55523100-3",
+                "description": "Послуги з харчування у школах"
+            },
+            "quantity": 5
+        }],
+        "dateModified": "2014-11-19T08:22:24.866669+00:00",
+        "id": "11111111111111111111111111111111",
+        "value": {
+            "amount": 35000,
+            "valueAddedTaxIncluded": False,
+            "currency": "UAH"
+        }
+    }
+}
+
 
 test_organization = {
     "name": u"Державне управління справами",
@@ -57,4 +139,26 @@ test_organization = {
         "name": u"Державне управління справами",
         "telephone": u"0440000000"
     }
+}
+
+
+test_auction_document = {
+    'current_phase': 'dutch',
+    'current_stage': 3,
+    'stages': [
+        {
+            "start": "2017-07-14T11:05:46+03:00",
+            "type": "pause",
+            "stage": "pause"
+        },
+        {
+            'amount': 10000
+        },
+        {
+            'amount': 9000
+        },
+        {
+            'amount': 8000
+        },
+    ]
 }

@@ -1,4 +1,6 @@
 import logging
+from copy import deepcopy
+from decimal import Decimal
 from requests import Session as RequestsSession
 from urlparse import urljoin
 from collections import defaultdict
@@ -243,8 +245,12 @@ class Auction(DutchDBServiceMixin,
         self.auction_document["current_stage"] = (len(
             self.auction_document["stages"]) - 1)
         self.auction_document['current_phase'] = END
+        normalized_document = deepcopy(self.auction_document)
+        for s in normalized_document['stages']:
+            if isinstance(s.get('amount'), Decimal):
+                s['amount'] = str(s['amount'])
         LOGGER.debug(' '.join((
-            'Document in end_stage: \n', yaml_dump(dict(self.auction_document))
+            'Document in end_stage: \n', yaml_dump(dict(normalized_document))
         )), extra={"JOURNAL_REQUEST_ID": self.request_id})
         self.approve_audit_info_on_announcement()
         LOGGER.info(
