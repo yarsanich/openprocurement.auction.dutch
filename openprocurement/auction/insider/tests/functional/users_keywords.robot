@@ -1,78 +1,78 @@
+*** Variables ***
+${dutch_amount}  xpath=(//div[@id='stage-sealedbid-dutch-winner']//span[@class='label-price ng-binding'])
+${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' '), ' sealedbid-winner ')]//span[@class='label-price ng-binding'])
+${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' '), ' dutch-winner ')]//span[@class='label-price ng-binding'])
+
 *** Keywords ***
-Переключитись на учасника
-    [Arguments]    ${user_id}
-    Switch Browser   ${user_id}
-    ${CURRENT_USER}=  set variable    ${user_id}
-    Set Global Variable   ${CURRENT_USER}
+Підготувати клієнт для ${user_index} користувача
+    ${user_id}=  Get Variable Value  ${USERS_ids[${user_index}]}
+    Open Browser  http://prozorro.org/  ${BROWSER}  ${user_id}
+    Set Window Position  @{USERS['${user_id}']['position']}
+    Set Window Size  @{USERS['${user_id}']['size']}
 
-Підготувати клієнт для користувача
-    [Arguments]    ${user_id}
-    Open Browser  http://prozorro.org/    ${BROWSER}  ${user_id}
-    Set Window Position   @{USERS['${user_id}']['position']}
-    Set Window Size       @{USERS['${user_id}']['size']}
-
-Залогуватись користувачем
-    [Arguments]    ${user_id}
-    Go to       ${USERS['${user_id}']['login_url']}
-    Wait Until Page Contains       Дякуємо за використання нашої системи електронних закупівель
-    Highlight Elements With Text On Time          Так
+Залогуватись ${user_index} користувачем
+    ${user_id}=  Get Variable Value  ${USERS_ids[${user_index}]}
+    Go to  ${USERS['${user_id}']['login_url']}
+    Wait Until Page Contains  Дякуємо за використання нашої системи електронних закупівель
+    Highlight Elements With Text On Time  Так
     Capture Page Screenshot
-    Click Element              confirm
-    Wait Until Page Contains   Ви зареєстровані як учасник. Очікуйте старту аукціону.
-    Highlight Elements With Text On Time     Ви зареєстровані як учасник. Очікуйте старту аукціону.
-    Page Should Contain        Очікування
-    Capture Page Screenshot
+    Click Element  confirm
 
-Перевірити інформацію по себе
-    Page Should Contain        до вашої черги
-    Page Should Contain        Ви
-    Highlight Elements With Text On Time    Ви
+Переключитись на ${user_index} учасника
+    ${user_index}=  Evaluate  ${user_index}-1
+    ${user_id}=  Get Variable Value  ${USERS_ids[${user_index}]}
+    Switch Browser  ${user_id}
+    ${CURRENT_USER}=  set variable  ${user_id}
+    Set Global Variable  ${CURRENT_USER}
 
+Зробити заявку
+    Highlight Elements With Text On Time  Зробити заявку
+    Click Element  id=place-bid-button
+    Wait Until Page Contains  Ви
 
-Поставити мінімально допустиму ставку
-    Wait Until Page Contains Element    id=max_bid_amount_price
-    ${last_amount}=     Get Text    id=max_bid_amount_price
-    Highlight Elements With Text On Time    ${last_amount}
-    Поставити ставку   ${last_amount}   Заявку прийнято
+Зробити ставку
+    Поставити ставку  1  Заявку прийнято  ${dutch_amount}
 
+Спробувати зробити надто низьку ставку
+    Поставити ставку  -1  Bid value can't be less or equal current amount  ${dutch_amount}
 
-Поставити низьку ціну в ставці
-    [Arguments]    ${extra_amount}
-    Wait Until Page Contains Element    id=max_bid_amount_price
-    ${last_amount}=     Get Text    id=max_bid_amount_price
-    Highlight Elements With Text On Time    ${last_amount}
-    ${last_amount}=     convert_amount_to_number    ${last_amount}
-    ${last_amount}=    Evaluate      ${last_amount}-${extra_amount}
-    Поставити ставку  ${last_amount}   Надто низька заявка
+Підвищити пропозицію переможцем голландської частини
+    Поставити ставку  1  Заявку прийнято  ${sealedbid_amount}
+
+Спробувати зробити невалідну ставку переможцем голландської частини
+    Поставити ставку  -1  Bid value can't be less or equal current amount  ${bestbid_amount}
 
 Поставити ставку
-    [Arguments]    ${amount}  ${msg}
-    Set To Dictionary    ${USERS['${CURRENT_USER}']}   last_amount=${amount}
-    ${input_amount}=   Convert To String  ${amount}
-    Input Text      id=bid-amount-input      ${input_amount}
+    [Arguments]  ${step}  ${msg}  ${locator}
+    Wait Until Page Contains Element  ${locator}
+    ${last_amount}=  Get Text  ${locator}
+    Highlight Elements With Text On Time  ${last_amount}
+    ${last_amount}=  convert_amount_to_number  ${last_amount}
+    ${amount}=  Evaluate  ${last_amount}+${step}
+    ${input_amount}=  Convert To String  ${amount}
+    Input Text  id=bid-amount-input  ${input_amount}
     sleep  1s
     Capture Page Screenshot
-    Highlight Elements With Text On Time    Зробити заявку
-    Click Element                id=place-bid-button
-    Wait Until Page Contains     ${msg}    10s
-    Highlight Elements With Text On Time    ${msg}
+    Highlight Elements With Text On Time  Зробити заявку
+    Click Element  id=place-bid-button
+    Wait Until Page Contains  ${msg}  10s
+    Highlight Elements With Text On Time  ${msg}
+    Capture Page Screenshot
+
+Відредагувати ставку
+    Wait Until Page Contains Element  id=edit-bid-button
+    Highlight Element  id=edit-bid-button
+    Click Element  id=edit-bid-button
+    Input Text  id=bid-amount-input  1
+    Capture Page Screenshot
+    Click Element  id=clear-bid-button
+    Capture Page Screenshot
+    Поставити ставку  1  Заявку прийнято  ${dutch_amount}
     Capture Page Screenshot
 
 Відмінитити ставку
-    Highlight Elements With Text On Time   Відмінити заявку
-    Click Element                id=cancel-bid-button
-    Wait Until Page Contains     Заявку відмінено      10s
-    Highlight Elements With Text On Time    Заявку відмінено
+    Highlight Elements With Text On Time  Відмінити заявку
+    Click Element  id=cancel-bid-button
+    Wait Until Page Contains  Заявку відмінено  10s
+    Highlight Elements With Text On Time  Заявку відмінено
     Capture Page Screenshot
-
-Вибрати кориcтувача, який може поставити ставку
-    :FOR    ${user_id}    IN    @{USERS}
-    \   Переключитись на учасника   ${user_id}
-    \   ${status}	${value}=    Run Keyword And Ignore Error   Page Should Contain  до закінчення вашої черги
-    \   Run Keyword If    '${status}' == 'PASS'    Exit For Loop
-
-Перевірити чи ставка була прийнята
-    Page Should Contain   ${USERS['${CURRENT_USER}']['last_amount']}
-    Highlight Elements With Text On Time   ${USERS['${CURRENT_USER}']['last_amount']}
-
-
