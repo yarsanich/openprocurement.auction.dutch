@@ -27,6 +27,7 @@ def test_put_auction_data(auction, logger, mocker):
     assert mock_announce_results_data.call_count == 1
 
     auction.debug = False
+    mock_approve_audit_info_on_announcement = mocker.patch.object(auction, 'approve_audit_info_on_announcement', autospec=True)
     mock_upload_audit_file_without_document_service = mocker.patch.object(
         auction,
         'upload_audit_file_without_document_service',
@@ -39,6 +40,7 @@ def test_put_auction_data(auction, logger, mocker):
 
     auction.put_auction_data()
 
+    mock_approve_audit_info_on_announcement.assert_called_once_with(approved=['bid_1', 'bid_2'])
     assert mock_upload_audit_file_without_document_service.call_count == 2
     assert mock_upload_audit_file_without_document_service.call_args_list[0] == ()
     assert mock_upload_audit_file_without_document_service.call_args_list[1][0] == ('test_doc_id', )
