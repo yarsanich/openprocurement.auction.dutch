@@ -81,10 +81,6 @@ class Auction(DutchDBServiceMixin,
         self.retries = 10
         self.mapping = {}
         self._bids_data = defaultdict(list)
-        LOGGER.info(self.debug)
-        # auction phases controllers
-
-        # Configuration for SealedBids phase
         self.has_critical_error = False
         if REQUEST_QUEUE_SIZE == -1:
             self.bids_queue = Queue()

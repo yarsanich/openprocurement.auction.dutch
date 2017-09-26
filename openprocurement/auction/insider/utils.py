@@ -56,11 +56,22 @@ def post_results_data(auction, with_auctions_results=True):
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
                 if bidder_id:
                     try:
-                        bid = get_latest_bid_for_bidder(auction.auction_document['results'], bidder_id)
+                        bid = get_latest_bid_for_bidder(
+                                auction.auction_document['results'],
+                                bidder_id
+                                )
                     except IndexError:
                         bid = ''
                     if bid:
-                        auction._auction_data["data"]["bids"][index]["value"]["amount"] = bid['amount']
+                        original = auction._auction_data["data"]["bids"][index]
+                        value = original.get('value', {})
+                        to_set = bid['amount'] if str(bid['amount']) != '-1' else None
+                        value.update({
+                            "amount": to_set,
+                            "currency": auction.auction_document['value'].get('currency')
+                        })
+
+                        auction._auction_data["data"]["bids"][index]['value'] = value
                         auction._auction_data["data"]["bids"][index]["date"] = bid['time']
     data = {'data': {'bids': auction._auction_data["data"].get('bids', [])}}
     LOGGER.info(
