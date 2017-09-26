@@ -273,7 +273,7 @@ class SealedBidAuctionPhase(object):
                 self._bids_data[bid['bidder_id']].append(bid)
                 self.audit['timeline'][SEALEDBID]['bids'].append(bid)
             sleep(0.1)
-        LOGGER.info("Bids queue done. Breaking woker")
+        LOGGER.info("Bids queue done. Breaking worker")
 
     def switch_to_sealedbid(self, stage):
         with utils.lock_bids(self), utils.update_auction_document(self):

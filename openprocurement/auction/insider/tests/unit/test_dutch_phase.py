@@ -2,12 +2,14 @@
 import datetime
 import dateutil.parser
 
+from openprocurement.auction.insider.constants import DUTCH
+
 
 def test_end_stage(auction, logger, mocker):
     auction.audit = {
         'timeline':
             {
-                'dutch': {
+                DUTCH: {
                     'timeline': {}
                 }
             }
@@ -47,10 +49,10 @@ def test_end_stage(auction, logger, mocker):
     assert auction.auction_document['stages'][0]['passed'] is True
     assert log_strings[-3] == '---------------- SWITCH DUTCH VALUE ----------------'
     assert auction.auction_document['stages'][1]['time'] == 'run_time_value'
-    assert auction.auction_document['current_phase'] == 'dutch'
-    assert auction.audit['timeline']['dutch']['timeline']['start'] == 'run_time_value'
+    assert auction.auction_document['current_phase'] == DUTCH
+    assert auction.audit['timeline'][DUTCH]['timeline']['start'] == 'run_time_value'
     assert log_strings[-2] == 'Switched dutch phase value from initial_value to 500000.0'
-    assert auction.audit['timeline']['dutch']['turn_1'] == {
+    assert auction.audit['timeline'][DUTCH]['turn_1'] == {
         'amount': 500000.0,
         'time': 'run_time_value'
     }
@@ -71,7 +73,7 @@ def test_approve_dutch_winner(auction, logger, mocker):
     auction.audit = {
         'timeline':
             {
-                'dutch': {
+                DUTCH: {
                     'bids': []
                 }
             }
@@ -95,8 +97,8 @@ def test_approve_dutch_winner(auction, logger, mocker):
         'dutch_winner': True
     }
 
-    assert len(auction.audit['timeline']['dutch']['bids']) == 1
-    assert auction.audit['timeline']['dutch']['bids'][0] == result_bid
+    assert len(auction.audit['timeline'][DUTCH]['bids']) == 1
+    assert auction.audit['timeline'][DUTCH]['bids'][0] == result_bid
     assert auction._bids_data['test_bidder_id'][0] == result_bid
 
     auction.auction_document['stages'] = []
@@ -111,7 +113,7 @@ def test_add_dutch_winner(auction, logger, mocker):
     auction.audit = {
         'timeline':
             {
-                'dutch': {
+                DUTCH: {
                     'bids': []
                 }
             }
@@ -178,7 +180,7 @@ def test_end_dutch(auction, logger, mocker):
     auction.audit = {
         'timeline':
             {
-                'dutch': {
+                DUTCH: {
                     'timeline': {},
                     'bids': []
                 }
@@ -214,7 +216,7 @@ def test_end_dutch(auction, logger, mocker):
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
     assert log_strings[-3] == '---------------- End dutch phase ----------------'
-    assert isinstance(dateutil.parser.parse(auction.audit['timeline']['dutch']['timeline']['end']), datetime.datetime)
+    assert isinstance(dateutil.parser.parse(auction.audit['timeline'][DUTCH]['timeline']['end']), datetime.datetime)
     assert len(auction.auction_document['stages'][1]) == 3
     assert auction.auction_document['stages'][1]['passed'] is True
     mock_spawn.assert_called_once_with(auction.clean_up_preplanned_jobs)
@@ -227,7 +229,7 @@ def test_end_dutch(auction, logger, mocker):
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
     assert log_strings[-2] == '---------------- End dutch phase ----------------'
-    assert isinstance(dateutil.parser.parse(auction.audit['timeline']['dutch']['timeline']['end']), datetime.datetime)
+    assert isinstance(dateutil.parser.parse(auction.audit['timeline'][DUTCH]['timeline']['end']), datetime.datetime)
     assert len(auction.auction_document['stages'][1]) == 3
     assert auction.auction_document['stages'][1]['passed'] is True
     assert mock_spawn.call_count == 2

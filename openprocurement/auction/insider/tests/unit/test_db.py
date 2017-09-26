@@ -31,9 +31,9 @@ def test_get_auction_info(auction, logger, mocker):
 
     assert isinstance(auction.startDate, datetime.datetime)
     assert auction._auction_data['data']['updated_from_get_tender_data']
-    assert mock_get_tender_data.called_once_with(
+    mock_get_tender_data.assert_called_once_with(
         auction.tender_url + '/auction',
-        user=auction.worker_defaults["TENDERS_API_TOKEN"],
+        user=auction.worker_defaults["resource_api_token"],
         request_id=auction.request_id,
         session=auction.session
     )
@@ -65,7 +65,7 @@ def test_get_auction_info(auction, logger, mocker):
     assert mock_get_tender_data.call_args_list[-1] == (
         (auction.tender_url + '/auction',),
         {
-            'user': auction.worker_defaults["TENDERS_API_TOKEN"],
+            'user': auction.worker_defaults["resource_api_token"],
             'request_id': auction.request_id,
             'session': auction.session
         }
@@ -100,7 +100,7 @@ def test_get_auction_info(auction, logger, mocker):
     assert mock_get_tender_data.call_args_list[-1] == (
         (auction.tender_url + '/auction',),
         {
-            'user': auction.worker_defaults["TENDERS_API_TOKEN"],
+            'user': auction.worker_defaults["resource_api_token"],
             'request_id': auction.request_id,
             'session': auction.session
         }
