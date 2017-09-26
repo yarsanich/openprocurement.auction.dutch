@@ -70,7 +70,6 @@ def validate_bid_value(form, field):
             'Not allowed to post bid on current'
             ' ({}) phase'.format(phase)
         )
-    return True
 
 
 def validate_bidder_id(form, field):
@@ -100,7 +99,6 @@ def validate_bidder_id(form, field):
             'Not allowed to post bid on current'
             ' ({}) phase'.format(phase)
         )
-    raise ValidationError("Unknown error")
 
 
 class BidsForm(Form):
@@ -188,9 +186,9 @@ def form_handler():
             return {"status": "failed", "errors": [repr(e)]}
     elif current_phase == BESTBID:
         ok = auction.add_bestbid({
-                'amount': str(form.data['bid']),
-                'time': current_time.isoformat(),
-                'bidder_id': form.data['bidder_id']
+            'amount': str(form.data['bid']),
+            'time': current_time.isoformat(),
+            'bidder_id': form.data['bidder_id']
         })
         if not isinstance(ok, Exception):
             app.logger.info(

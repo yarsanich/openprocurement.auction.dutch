@@ -13,12 +13,10 @@ from pytz import timezone as tz
 from StringIO import StringIO
 
 from openprocurement.auction.insider.auction import Auction, SCHEDULER
+from openprocurement.auction.insider.server import app as server_app
 from openprocurement.auction.insider.forms import BidsForm
 from openprocurement.auction.insider.mixins import LOGGER
-from openprocurement.auction.insider.server import app as server_app
-from openprocurement.auction.insider.tests.data.data import (
-    tender_data, test_auction_document
-)
+from openprocurement.auction.insider.tests.data.data import tender_data
 
 
 def update_auctionPeriod(data):
@@ -31,9 +29,8 @@ def update_auctionPeriod(data):
 
 
 PWD = os.path.dirname(os.path.realpath(__file__))
-
 worker_defaults_file_path = os.path.join(
-    PWD,
+    os.getcwd(),
     "openprocurement/auction/insider/tests/data/auction_worker_insider.yaml")
 with open(worker_defaults_file_path) as stream:
     worker_defaults = yaml.load(stream)
@@ -44,7 +41,7 @@ def auction():
     update_auctionPeriod(tender_data)
 
     yield Auction(
-        tender_id=tender_data['data']['auctionID'],
+        tender_id=tender_data['data']['tenderID'],
         worker_defaults=yaml.load(open(worker_defaults_file_path)),
         auction_data=tender_data
     )
@@ -90,8 +87,9 @@ def bids_form(auction, db):
     return form
 
 
-@pytest.fixture(scope='function')
-def app():
+@pytest.yield_fixture(scope='function')
+def app(db):
+    new_app = server_app
     update_auctionPeriod(tender_data)
     logger = MagicMock()
     logger.name = 'some-logger'
@@ -103,7 +101,6 @@ def app():
     app_auction.prepare_auction_document()
     app_auction.schedule_auction()
     app_auction.start_auction()
-    # import pdb; pdb.set_trace()
     server_app.config.update(app_auction.worker_defaults)
     server_app.logger_name = logger.name
     server_app._logger = logger
@@ -151,6 +148,7 @@ def app():
             'clients': {},
             'channels': {}
         }}
+
     yield server_app.test_client()
 
 

@@ -2,7 +2,7 @@ import json
 from flask import session
 from datetime import datetime, timedelta
 from dateutil.tz import tzlocal
-from mock import MagicMock, patch
+from mock import patch
 from openprocurement.auction.insider.forms import form_handler
 
 
@@ -58,7 +58,6 @@ def test_server_login(app):
         session['login_bidder_id'] = u'5675acc9232942e8940a034994ad883e'
         session['signature'] = u'bd4a790aac32b73e853c26424b032e5a29143d1f'
         session['login_callback'] = 'http://localhost/authorized'
-    # import pdb; pdb.set_trace()
 
 
 def test_server_authorized(app):
@@ -312,7 +311,6 @@ def test_server_postbid_and_form_handler(app):
         {'id': bestbid_bidder_id})
     app.application.config['auction'].mapping[bestbid_bidder_id] = \
         len(app.application.config['auction'].mapping) + 1
-
     with patch('openprocurement.auction.insider.server.session', s), \
             patch('openprocurement.auction.insider.forms.session', s):
         res = app.post('/postbid', data=json.dumps(data), headers=headers)
@@ -325,6 +323,7 @@ def test_server_postbid_and_form_handler(app):
             u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3'
         }
     }
+    assert app.application.config['auction'].bidders_count == 1
 
     # Prepare auction switch_to_sealedbid
     current_stage = \
@@ -472,7 +471,7 @@ def test_server_postbid_and_form_handler(app):
         }
     }
 
-    # Prepare auction switch_to_bestbid
+    # Prepare auction switch_to_end_auction
     current_stage = \
         app.application.config['auction'].auction_document['current_stage'] + 1
     stage = app.application.config['auction'].auction_document[
