@@ -113,15 +113,16 @@ def announce_results_data(auction, results=None):
         for bid in results["data"].get("bids", [])
         if bid.get("status", "active") == "active"
     ])
-    for index, stage in enumerate(auction.auction_document['results']):
-        if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
-            auction.auction_document['results'][index].update({
-                "label": {
-                    'uk': bids_information[stage['bidder_id']][0]["name"],
-                    'en': bids_information[stage['bidder_id']][0]["name"],
-                    'ru': bids_information[stage['bidder_id']][0]["name"],
-                }
-            })
+    for field in ['results', 'stages']:
+        for index, stage in enumerate(auction.auction_document[field]):
+            if 'bidder_id' in stage and stage['bidder_id'] in bids_information:
+                auction.auction_document[field][index].update({
+                    "label": {
+                        'uk': bids_information[stage['bidder_id']][0]["name"],
+                        'en': bids_information[stage['bidder_id']][0]["name"],
+                        'ru': bids_information[stage['bidder_id']][0]["name"],
+                    }
+                })
     return bids_information
 
 
