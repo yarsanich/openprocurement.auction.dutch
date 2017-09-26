@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = '1.0.1a1.dev5'
+VERSION = '1.0.1a1.dev6'
 INSTALL_REQUIRES = [
     'setuptools',
     'openprocurement.auction',
