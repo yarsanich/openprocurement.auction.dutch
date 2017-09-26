@@ -116,9 +116,9 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
 
         if results:
             bids_information = utils.announce_results_data(self, results)
-
             if not self.debug:
                 if doc_id and bids_information:
+                    self.approve_audit_info_on_announcement(approved=bids_information)
                     if self.worker_defaults.get('with_document_service', False):
                         doc_id = self.upload_audit_file_with_document_service(
                             doc_id
