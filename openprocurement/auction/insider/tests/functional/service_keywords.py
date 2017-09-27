@@ -29,7 +29,7 @@ def prepare_users_data(tender_data):
             'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
                 bid["id"], signature
             ),
-            'amount': bid['value'].get('amount', ''),
+            'amount': bid.get('value', {}).get('amount', ''),
             'position': positions[index],
             'size': size
         }

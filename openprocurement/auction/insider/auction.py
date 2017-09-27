@@ -83,10 +83,6 @@ class Auction(DutchDBServiceMixin,
         self.retries = 10
         self.mapping = {}
         self._bids_data = defaultdict(list)
-        LOGGER.info(self.debug)
-        # auction phases controllers
-
-        # Configuration for SealedBids phase
         self.has_critical_error = False
         if REQUEST_QUEUE_SIZE == -1:
             self.bids_queue = Queue()
@@ -228,11 +224,11 @@ class Auction(DutchDBServiceMixin,
                 bid_result_audit['sealedbid_winner'] = True
             if approved:
                 bid_result_audit["identification"] = approved.get(
-                    bid['bidder_id'], {}
-                ).get('tenderers', [])
-                bid_result_audit["owner"] = approved.get(
-                    bid['bidder_id'], {}
-                ).get('owner', '')
+                    bid['bidder_id'],
+                    [{
+                        "name": self.mapping[bid['bidder_id']]
+                    }]
+                )[0]['name']
             self.audit['results']['bids'].append(bid_result_audit)
 
     def end_auction(self):

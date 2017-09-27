@@ -76,8 +76,10 @@ def authorized():
         return abort(403, 'Access denied')
     bidder_data = get_bidder_id(app, session)
     bidder_id = bidder_data['bidder_id']
-    app.config['auction'].bidders_data.append({'id': bidder_id})
-    app.config['auction'].mapping[bidder_id] = len(app.config['auction'].mapping) + 1
+    if bidder_id not in app.config['auction'].mapping:
+        app.config['auction'].mapping[bidder_id] =\
+            len(app.config['auction'].mapping) + 1
+        app.config['auction'].bidders_data.append({'id': bidder_id})
     app.logger.info("Bidder {} with client_id {} authorized".format(
                     bidder_data['bidder_id'], session['client_id'],
                     ), extra=prepare_extra_journal_fields(request.headers))

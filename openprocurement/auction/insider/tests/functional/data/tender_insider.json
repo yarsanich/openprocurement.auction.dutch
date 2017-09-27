@@ -17,12 +17,7 @@
       {
         "date": "2014-11-19T08:22:21.726234+00:00",
         "id": "e4456d02263441ffb3f00ceafa661bb2",
-        "value": {
-            "currency": null,
-	    "amount": 0,
-            "valueAddedTaxIncluded": true
-        },
-	  "tenderers": [
+	"tenderers": [
 	      {
 		  "contactPoint": {
 		      "telephone": "+380139815286",
@@ -49,12 +44,7 @@
       {
         "date": "2014-11-19T08:22:24.038426+00:00",
         "id": "e4456d02263441ffb2f00ceafa661bb2",
-          "value": {
-              "currency": null,
-	      	    "amount": 0,
-              "valueAddedTaxIncluded": true
-          },
-	  "tenderers": [
+        "tenderers": [
 	      {
 		  "contactPoint": {
 		      "telephone": "+380139815286",
@@ -81,12 +71,7 @@
       {
         "date": "2014-11-19T08:22:24.038426+00:00",
         "id": "e4456d02263441ffb2f00ceafa771bb2",
-          "value": {
-              "currency": null,
-              "amount": 0,
-              "valueAddedTaxIncluded": true
-          },
-    "tenderers": [
+         "tenderers": [
         {
       "contactPoint": {
           "telephone": "+380139815286",

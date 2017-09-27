@@ -341,9 +341,8 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bid': [u'To low value', u'To low value'],
-            u'bidder_id': [u'Not allowed to post bid for dutch winner',
-                           u'Not allowed to post bid for dutch winner']
+            u'bid': [u'To low value'],
+            u'bidder_id': [u'Not allowed to post bid for dutch winner']
         }
     }
 
@@ -358,8 +357,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bid': [u"Bid value can't be less or equal current amount",
-                     u"Bid value can't be less or equal current amount"]
+            u'bid': [u"Bid value can't be less or equal current amount"]
         }
     }
 
@@ -434,8 +432,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bidder_id': [u"bidder_id don't match with dutchWinner.bidder_id",
-                           u"bidder_id don't match with dutchWinner.bidder_id"]
+            u'bidder_id': [u"bidder_id don't match with dutchWinner.bidder_id"]
         }
     }
 
@@ -450,8 +447,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bid': [u"Bid value can't be less or equal current amount",
-                     u"Bid value can't be less or equal current amount"]
+            u'bid': [u"Bid value can't be less or equal current amount"]
         }
     }
 
