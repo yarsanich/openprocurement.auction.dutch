@@ -28,7 +28,8 @@ ENTRY_POINTS = {
 setup(name='openprocurement.auction.insider',
       version=VERSION,
       description="",
-      long_description=open(os.path.join("docs", "HISTORY.txt")).read(),
+      long_description=open("README.txt").read() + "\n" +
+                       open(os.path.join("docs", "HISTORY.txt")).read(),
       # Get more strings from
       # http://pypi.python.org/pypi?:action=list_classifiers
       classifiers=[
