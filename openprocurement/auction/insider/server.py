@@ -101,17 +101,17 @@ def authorized():
 @app.route('/relogin')
 def relogin():
     if (all([key in session
-             for key in ['login_callback', 'login_bidder_id', 'signature']])):
+             for key in ['login_callback', 'login_bidder_id', 'login_hash']])):
         if 'amount' in request.args:
             session['amount'] = request.args['amount']
         app.logger.debug("Session: {}".format(repr(session)))
         app.logger.info("Bidder {} with login_hash {} start re-login".format(
-                        session['login_bidder_id'], session['signature'],
+                        session['login_bidder_id'], session['login_hash'],
                         ), extra=prepare_extra_journal_fields(request.headers))
         return app.remote_oauth.authorize(
             callback=session['login_callback'],
             bidder_id=session['login_bidder_id'],
-            signature=session['signature'],
+            hash=session['login_hash'],
             auto_allow='1'
         )
     return redirect(

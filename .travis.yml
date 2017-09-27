@@ -8,7 +8,6 @@ python:
   - "2.7"
 services:
   - couchdb
-  - redis
 env:
   global:
     - TZ=Europe/Kiev
@@ -16,13 +15,11 @@ cache:
   directories:
     - eggs
 before_install:
-  - pip install setuptools==36.5.0 python-coveralls
+  - pip install setuptools==11.3
   - python2 bootstrap.py
-  - mv openprocurement/auction/insider/tests/data/auction_worker_travis.yaml openprocurement/auction/insider/tests/data/auction_worker_insider.yaml
+  - mv openprocurement/auction/insider/tests/data/auction_worker_travis.yaml openprocurement/auction/insider/tests/data/auction_worker_defaults.yaml
 install:
   - bin/buildout -N
   - curl -X PUT 0.0.0.0:5984/auctions
 script:
-  - bin/pytest
-after_success:
-  - coveralls
+  - bin/pytest openprocurement/auction/insider/tests/unit/
