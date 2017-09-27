@@ -1,4 +1,0 @@
-Introduction
-============
-
-OpenProcurement Auction Software

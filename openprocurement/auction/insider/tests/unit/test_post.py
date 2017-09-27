@@ -13,16 +13,10 @@ def test_put_auction_data(auction, logger, mocker):
 
     assert result is True
 
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-    assert log_strings[-2] == "Put auction data disabled"
-    assert log_strings[-3] == "Put auction data disabled"
-
     mock_post_results_data.return_value = False
     auction.generate_request_id()
     auction.put_auction_data()
 
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-    assert log_strings[-2] == "Auctions results not approved"
     assert mock_post_results_data.call_count == 2
     assert mock_announce_results_data.call_count == 1
 

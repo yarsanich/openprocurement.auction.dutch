@@ -47,15 +47,11 @@ def validate_bid_value(form, field):
             current_amount = Decimal(str(current_amount))
         if field.data != Decimal('-1') and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
-            # form[field.name].errors.append(message)
-            # TODO: appending of error message is performing in wtforms.field.core._run_validation_chain
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
         if field.data <= Decimal('0.0') and field.data != Decimal('-1'):
-            message = u'Too low value'
-            # form[field.name].errors.append(message)
-            # TODO: appending of error message is performing in wtforms.field.core._run_validation_chain
+            message = u'To low value'
             raise ValidationError(message)
         winner = get_dutch_winner(form.document)
         dutch_winner_value = winner.get('amount')
@@ -64,8 +60,6 @@ def validate_bid_value(form, field):
             dutch_winner_value = Decimal(str(dutch_winner_value))
         if field.data != Decimal('-1') and (field.data <= dutch_winner_value):
             message = u'Bid value can\'t be less or equal current amount'
-            # form[field.name].errors.append(message)
-            # TODO: appending of error message is performing in wtforms.field.core._run_validation_chain
             raise ValidationError(message)
         return True
     else:
@@ -73,8 +67,6 @@ def validate_bid_value(form, field):
             'Not allowed to post bid on current'
             ' ({}) phase'.format(phase)
         )
-    # return True
-    # TODO: this return can't be reached
 
 
 def validate_bidder_id(form, field):
@@ -84,8 +76,6 @@ def validate_bidder_id(form, field):
             dutch_winner = get_dutch_winner(form.document)
             if dutch_winner and dutch_winner['bidder_id'] != field.data:
                 message = u'bidder_id don\'t match with dutchWinner.bidder_id'
-                # form[field.name].errors.append(message)
-                # TODO: appending of error message is performing in wtforms.field.core._run_validation_chain
                 raise ValidationError(message)
             return True
         except KeyError as e:
@@ -95,8 +85,6 @@ def validate_bidder_id(form, field):
         dutch_winner = get_dutch_winner(form.document)
         if dutch_winner.get('bidder_id') == field.data:
             message = u'Not allowed to post bid for dutch winner'
-            # form[field.name].errors.append(message)
-            # TODO: appending of error message is performing in wtforms.field.core._run_validation_chain
             raise ValidationError(message)
         return True
     elif phase == DUTCH:
@@ -106,8 +94,6 @@ def validate_bidder_id(form, field):
             'Not allowed to post bid on current'
             ' ({}) phase'.format(phase)
         )
-    # raise ValidationError("Unknown error")
-    # TODO: this raise can't be reached
 
 
 class BidsForm(Form):
@@ -195,9 +181,9 @@ def form_handler():
             return {"status": "failed", "errors": [repr(e)]}
     elif current_phase == BESTBID:
         ok = auction.add_bestbid({
-                'amount': str(form.data['bid']),
-                'time': current_time.isoformat(),
-                'bidder_id': form.data['bidder_id']
+            'amount': str(form.data['bid']),
+            'time': current_time.isoformat(),
+            'bidder_id': form.data['bidder_id']
         })
         if not isinstance(ok, Exception):
             app.logger.info(
