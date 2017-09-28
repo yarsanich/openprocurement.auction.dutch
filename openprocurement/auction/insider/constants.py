@@ -23,7 +23,7 @@ END = 'announcement'
 
 INVALIDATE_GRANT = timedelta(0, 230)
 
-DUTCH_TIMEDELTA = timedelta(minutes=360)
+DUTCH_TIMEDELTA = timedelta(minutes=405)
 FIRST_PAUSE = timedelta(seconds=30)
 FIRST_PAUSE_SECONDS = timedelta(seconds=5)
 LAST_PAUSE_SECONDS = timedelta(seconds=5)
