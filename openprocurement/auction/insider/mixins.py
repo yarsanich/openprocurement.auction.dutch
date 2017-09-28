@@ -351,7 +351,7 @@ class BestBidAuctionPhase(object):
                     "Dutch winner id={bidder_id} placed bid {amount}"
                     " on {time}".format(**bid)
                 )
-            return True
+                return True
         except Exception as e:
             LOGGER.info(
                 "Falied to update dutch winner. Error: {}".format(
