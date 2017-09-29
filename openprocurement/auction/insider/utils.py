@@ -68,7 +68,8 @@ def post_results_data(auction, with_auctions_results=True):
                         to_set = bid['amount'] if str(bid['amount']) != '-1' else None
                         value.update({
                             "amount": to_set,
-                            "currency": auction.auction_document['value'].get('currency')
+                            "currency": auction.auction_document['value'].get('currency'),
+                            "valueAddedTaxIncluded": auction.auction_document['value'].get('valueAddedTaxIncluded')
                         })
 
                         auction._auction_data["data"]["bids"][index]['value'] = value
