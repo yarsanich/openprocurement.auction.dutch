@@ -4,6 +4,7 @@ import sys
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
+from copy import deepcopy
 
 from dateutil.tz import tzlocal
 from openprocurement.auction.utils import get_latest_bid_for_bidder,\
@@ -50,31 +51,34 @@ prepare_bids_stage = prepare_results_stage
 
 def post_results_data(auction, with_auctions_results=True):
     """TODO: make me work"""
+    def generate_value(bid_info):
+        auction_bid = bid_info['amount'] if str(bid_info['amount']) != '-1'\
+                else None
+        value = auction.auction_document['value']
+        return {
+            "value": auction_bid,
+            "currency": value.get('currency'),
+            "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
+        }
+
     if with_auctions_results:
-        for index, bid_info in enumerate(auction._auction_data["data"].get("bids", [])):
+        info = auction.get_auction_info()
+        bids = info['data'].get("bids", [])
+        for bid_info in bids:
             if bid_info.get('status', 'active') == 'active':
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
                 if bidder_id:
                     try:
                         bid = get_latest_bid_for_bidder(
-                                auction.auction_document['results'],
-                                bidder_id
-                                )
+                            auction.auction_document['results'],
+                            bidder_id
+                        )
                     except IndexError:
                         bid = ''
                     if bid:
-                        original = auction._auction_data["data"]["bids"][index]
-                        value = original.get('value', {})
-                        to_set = bid['amount'] if str(bid['amount']) != '-1' else None
-                        value.update({
-                            "amount": to_set,
-                            "currency": auction.auction_document['value'].get('currency'),
-                            "valueAddedTaxIncluded": auction.auction_document['value'].get('valueAddedTaxIncluded')
-                        })
-
-                        auction._auction_data["data"]["bids"][index]['value'] = value
-                        auction._auction_data["data"]["bids"][index]["date"] = bid['time']
-    data = {'data': {'bids': auction._auction_data["data"].get('bids', [])}}
+                        bid_info['value'] = generate_value(bid)
+                        bid_info['date'] = bid['time']
+    data = {'data': {'bids': bids}}
     LOGGER.info(
         "Approved data: {}".format(data),
         extra={"JOURNAL_REQUEST_ID": auction.request_id,
@@ -88,16 +92,12 @@ def post_results_data(auction, with_auctions_results=True):
             request_id=auction.request_id,
             session=auction.session
         )
-    else:
-        LOGGER.info(
-            "Making request to api with params {}".format(
-                dict(
-                    method="post",
-                    url=auction.tender_url + '/auction',
-                    data=data
-                )
-        ))
-        return data
+    LOGGER.info(
+        "Making request to api with params {}".format(
+        dict(method="post",
+             url=auction.tender_url + '/auction',
+             data=data)))
+    return data
 
 
 def announce_results_data(auction, results=None):
@@ -283,74 +283,3 @@ def prepare_auction_document(auction, fast_forward=False):
             'time': ''
         })
     return auction.auction_document
-
-
-def get_auction_info(auction, prepare=False):
-    if not auction.debug:
-        if prepare:
-            auction._auction_data = get_tender_data(
-                auction.tender_url,
-                request_id=auction.request_id,
-                session=auction.session
-            )
-        else:
-            auction._auction_data = {'data': {}}
-
-        auction_data = get_tender_data(
-            auction.tender_url + '/auction',
-            user=auction.worker_defaults["resource_api_token"],
-            request_id=auction.request_id,
-            session=auction.session
-        )
-        if auction_data:
-            auction._auction_data['data'].update(auction_data['data'])
-            auction.startDate = auction.convert_datetime(auction._auction_data['data']['auctionPeriod']['startDate'])
-            del auction_data
-        else:
-            auction.get_auction_document()
-            if auction.auction_document:
-                auction.auction_document["current_stage"] = -100
-                auction.save_auction_document()
-                LOGGER.warning(
-                    "Cancel auction: {}".format(auction.auction_doc_id),
-                    extra={
-                        "JOURNAL_REQUEST_ID": auction.request_id,
-                        "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_CANCEL
-                    }
-                )
-            else:
-                LOGGER.error(
-                    "Auction {} not exists".format(auction.auction_doc_id),
-                    extra={
-                        "JOURNAL_REQUEST_ID": auction.request_id,
-                        "MESSAGE_ID": AUCTION_WORKER_API_AUCTION_NOT_EXIST
-                    }
-                )
-            auction._end_auction_event.set()
-            sys.exit(1)
-    if 'bids' in auction._auction_data['data']:
-        LOGGER.info(
-            "Bidders count: {}".format(auction.bidders_count),
-            extra={
-                "JOURNAL_REQUEST_ID": auction.request_id,
-                "MESSAGE_ID": AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
-            }
-        )
-
-    auction.startDate = auction.convert_datetime(
-        auction._auction_data['data']['auctionPeriod']['startDate']
-    )
-
-    if not prepare:
-        auction.bidders_data = []
-
-        for bid in auction._auction_data['data'].get('bids',[]):
-            if bid.get('status', 'active') == 'active':
-                auction.bidders_data.append({
-                    'id': bid['id'],
-                    'date': bid['date'],
-                    'value': bid['value'],
-                    'owner': bid.get('owner', '')
-                })
-        for index, _ in enumerate(auction.bidders_data):
-            auction.mapping[auction.bidders_data[index]['id']] = str(index + 1)
