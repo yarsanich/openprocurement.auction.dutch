@@ -19,7 +19,7 @@ from openprocurement.auction.insider.forms import BidsForm, form_handler
 from openprocurement.auction.insider.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
-    prepare_extra_journal_fields, get_bidder_id, calculate_hash
+    prepare_extra_journal_fields, get_bidder_id
 from openprocurement.auction.event_source import sse, send_event,\
     send_event_to_client, remove_client,\
     push_timestamps_events, check_clients
@@ -77,9 +77,9 @@ def authorized():
     bidder_data = get_bidder_id(app, session)
     bidder_id = bidder_data['bidder_id']
     if bidder_id not in app.config['auction'].mapping:
-        app.config['auction'].mapping[bidder_id] =\
-            len(app.config['auction'].mapping) + 1
-        app.config['auction'].bidders_data.append({'id': bidder_id})
+        app.config['auction'].get_auction_info()
+        if bidder_id not in app.config['auction'].mapping:
+            return abort(403)
     app.logger.info("Bidder {} with client_id {} authorized".format(
                     bidder_data['bidder_id'], session['client_id'],
                     ), extra=prepare_extra_journal_fields(request.headers))
