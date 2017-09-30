@@ -8,6 +8,7 @@ from dateutil.tz import tzlocal
 from gevent import spawn, sleep
 from gevent.event import Event
 from itertools import chain
+from requests.exceptions import RequestException
 
 from openprocurement.auction.utils import get_tender_data,\
     sorting_by_amount, get_latest_bid_for_bidder
@@ -29,7 +30,6 @@ LOGGER = logging.getLogger("Auction Worker Insider")
 class DutchDBServiceMixin(DBServiceMixin):
     """ Mixin class to work with couchdb"""
     def get_auction_info(self, prepare=False):
-        # TODO: get bid info on login
         if not self.debug:
             if prepare:
                 self._auction_data = get_tender_data(
@@ -75,6 +75,20 @@ class DutchDBServiceMixin(DBServiceMixin):
         self.startDate = self.convert_datetime(
             self._auction_data['data']['auctionPeriod']['startDate']
         )
+        self.bidders_data = [
+            {
+                'id': bid['id'],
+                'date': bid['date'],
+                'owner': bid.get('owner', '')
+            }
+            for bid in self._auction_data['data'].get('bids', [])
+            if bid.get('status', 'active') == 'active'
+        ]
+        for index, bid in enumerate(self.bidders_data):
+            if bid['id'] not in self.mapping:
+                self.mapping[self.bidders_data[index]['id']]\
+                    = len(self.mapping.keys()) + 1
+        return self._auction_data
 
     def prepare_public_document(self):
         public_document = deepcopy(dict(self.auction_document))
@@ -111,8 +125,13 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
                 doc_id = self.upload_audit_file_without_document_service()
         else:
             LOGGER.debug("Put auction data disabled")
-
-        results = utils.post_results_data(self)
+        try:
+            results = utils.post_results_data(self)
+        except RequestException as e:
+            LOGGER.fatal("Unable to post results data. Error: {}".format(
+                e
+            ))
+            results = ''
 
         if results:
             bids_information = utils.announce_results_data(self, results)
@@ -235,6 +254,7 @@ class DutchAuctionPhase(object):
         self.audit['timeline'][DUTCH]['timeline']['end']\
             = datetime.now(tzlocal()).isoformat()
         stage_index = self.auction_document['current_stage']
+
         if self.auction_document['stages'][stage_index]['type'].startswith('dutch'):
             self.auction_document['stages'][stage_index].update({
                 'passed': True
