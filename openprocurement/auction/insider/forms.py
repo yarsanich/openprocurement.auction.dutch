@@ -117,7 +117,10 @@ class BidsForm(Form):
 
 def form_handler():
     auction = app.config['auction']
-    form = app.bids_form.from_json(request.json)
+    raw_data = request.json
+    if 'bid' in raw_data:
+        raw_data['bid'] = str(raw_data['bid'])
+    form = app.bids_form.from_json(raw_data)
     form.auction = auction
     form.document = auction.auction_document
     current_time = datetime.now(timezone('Europe/Kiev'))
