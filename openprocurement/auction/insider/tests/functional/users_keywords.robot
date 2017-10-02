@@ -56,7 +56,6 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Highlight Elements With Text On Time  Зробити заявку
     Click Element  id=place-bid-button
     Wait Until Page Contains  ${msg}  10s
-    Highlight Elements With Text On Time  ${msg}
     Capture Page Screenshot
 
 Відредагувати ставку
