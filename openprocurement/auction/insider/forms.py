@@ -174,12 +174,15 @@ def form_handler():
 
     elif current_phase == SEALEDBID:
         try:
-            auction.bids_queue.put({
-                'amount': str(form.data['bid']),
-                'time': current_time.isoformat(),
-                'bidder_id': form.data['bidder_id']
-            })
-            return {"status": "ok", "data": form.data}
+            if hasattr(auction, '_end_sealedbid'):
+                if not auction._end_sealedbid.is_set():
+                    auction.bids_queue.put({
+                        'amount': str(form.data['bid']),
+                        'time': current_time.isoformat(),
+                        'bidder_id': form.data['bidder_id']
+                    })
+                    return {"status": "ok", "data": form.data}
+            return {"status": "failed", "errors": ['Forbidden']}
         except Exception as e:
             return {"status": "failed", "errors": [repr(e)]}
     elif current_phase == BESTBID:
