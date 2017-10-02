@@ -27,7 +27,11 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_AUCTION,\
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
     AUCTION_WORKER_SERVICE_PREPARE_SERVER,\
-    AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
+    AUCTION_WORKER_SERVICE_END_FIRST_PAUSE,\
+    AUCTION_WORKER_SERVICE_AUCTION_CANCELED,\
+    AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND,\
+    AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,\
+    AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids, prepare_results_stage
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
