@@ -125,13 +125,7 @@ class DutchPostAuctionMixin(PostAuctionServiceMixin):
                 doc_id = self.upload_audit_file_without_document_service()
         else:
             LOGGER.debug("Put auction data disabled")
-        try:
-            results = utils.post_results_data(self)
-        except RequestException as e:
-            LOGGER.fatal("Unable to post results data. Error: {}".format(
-                e
-            ))
-            results = ''
+        results = utils.post_results_data(self)
 
         if results:
             bids_information = utils.announce_results_data(self, results)
@@ -325,18 +319,18 @@ class SealedBidAuctionPhase(object):
                 return
 
             all_bids = deepcopy(self._bids_data)
-            minimal_bids = []
+            max_bids = []
             max_bid = {'amount': 0}  # init sealedbid winner bid
             for bid_id in all_bids.keys():
                 bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
                 bid['bidder_name'] = self.mapping[bid['bidder_id']]
-                minimal_bids.append(
+                max_bids.append(
                     utils.prepare_results_stage(**bid)
                 )
                 # find a winner
                 max_bid = max([max_bid, bid], key=lambda bid: bid['amount'])
-            minimal_bids = sorting_by_amount(minimal_bids)
-            self.auction_document['results'] = minimal_bids
+            max_bids = sorting_by_amount(max_bids)
+            self.auction_document['results'] = max_bids
             # save winner to stages in auction_document
             max_bid['sealedbid_winner'] = True
             self.auction_document['stages'][self.auction_document['current_stage']].update(
