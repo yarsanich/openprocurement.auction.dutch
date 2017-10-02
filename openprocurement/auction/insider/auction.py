@@ -264,6 +264,7 @@ class Auction(DutchDBServiceMixin,
             'Audit data: \n {}'.format(yaml_dump(self.audit)),
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
+        self.auction_document['endDate'] = datetime.now(tzlocal()).isoformat()
         if self.put_auction_data():
             self.save_auction_document()
         LOGGER.debug(

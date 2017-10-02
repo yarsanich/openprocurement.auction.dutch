@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
 import logging
-import sys
 from contextlib import contextmanager
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
-from copy import deepcopy
 
 from dateutil.tz import tzlocal
 from openprocurement.auction.utils import get_latest_bid_for_bidder,\
