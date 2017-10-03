@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 import pytest
-from mock import MagicMock, patch
 from munch import munchify
 from openprocurement.auction.insider.constants import (
     DUTCH, SEALEDBID, BESTBID
@@ -50,17 +49,18 @@ def test_validate_bidder_id_error_on_bestbid(bids_form):
     assert len(bids_form.errors) == 1
 
 
-def test_form_handler_error_on_sealedbid(app):
+def test_form_handler_error_on_sealedbid(app, mocker):
     app.application.form_handler = form_handler
     app.application.config['auction'].auction_document['current_phase'] = \
         SEALEDBID
-    app.application.config['auction'].bids_queue.put = MagicMock(
+    app.application.config['auction'].bids_queue.put = mocker.MagicMock(
         side_effect=[Exception('Something went wrong :(')]
     )
-    magic_form = MagicMock()
+    magic_form = mocker.MagicMock()
     magic_form.validate.return_value = True
-    app.application.bids_form = MagicMock()
+    app.application.bids_form = mocker.MagicMock()
     app.application.bids_form.from_json.return_value = magic_form
+    mocker.patch('openprocurement.auction.insider.forms.request', munchify({'json': {}, 'headers': {}}))
     with app.application.test_request_context():
         res = app.application.form_handler()
     assert res == {
@@ -69,21 +69,20 @@ def test_form_handler_error_on_sealedbid(app):
     }
 
 
-def test_form_handler_error_on_bestbid(app):
+def test_form_handler_error_on_bestbid(app, mocker):
     app.application.form_handler = form_handler
     app.application.config['auction'].auction_document['current_phase'] = \
         BESTBID
-    app.application.config['auction'].add_bestbid = MagicMock(
+    app.application.config['auction'].add_bestbid = mocker.MagicMock(
         return_value=Exception('Something went wrong :(')
     )
-    magic_form = MagicMock()
+    magic_form = mocker.MagicMock()
     magic_form.validate.return_value = True
-    app.application.bids_form = MagicMock()
+    app.application.bids_form = mocker.MagicMock()
     app.application.bids_form.from_json.return_value = magic_form
-    with app.application.test_request_context(), \
-            patch('openprocurement.auction.insider.forms.request',
-                  munchify({'json': {}, 'headers': {}})), \
-            patch('openprocurement.auction.insider.forms.session', {}):
+    mocker.patch('openprocurement.auction.insider.forms.request', munchify({'json': {}, 'headers': {}}))
+    mocker.patch('openprocurement.auction.insider.forms.session', {})
+    with app.application.test_request_context():
         res = app.application.form_handler()
     assert res == {
         'status': 'failed',
@@ -91,14 +90,15 @@ def test_form_handler_error_on_bestbid(app):
     }
 
 
-def test_form_handler_error_on_invalid_stage(app):
+def test_form_handler_error_on_invalid_stage(app, mocker):
     app.application.form_handler = form_handler
     app.application.config['auction'].auction_document['current_phase'] = \
         'invalid_stage'
-    magic_form = MagicMock()
+    magic_form = mocker.MagicMock()
     magic_form.validate.return_value = True
-    app.application.bids_form = MagicMock()
+    app.application.bids_form = mocker.MagicMock()
     app.application.bids_form.from_json.return_value = magic_form
+    mocker.patch('openprocurement.auction.insider.forms.request', munchify({'json': {}, 'headers': {}}))
     with app.application.test_request_context():
         res = app.application.form_handler()
     assert res == {
