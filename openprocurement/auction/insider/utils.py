@@ -59,9 +59,9 @@ def post_results_data(auction, with_auctions_results=True):
             "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
         }
 
+    info = auction.get_auction_info()
+    bids = info['data'].get("bids", [])
     if with_auctions_results:
-        info = auction.get_auction_info()
-        bids = info['data'].get("bids", [])
         for bid_info in bids:
             if bid_info.get('status', 'active') == 'active':
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
