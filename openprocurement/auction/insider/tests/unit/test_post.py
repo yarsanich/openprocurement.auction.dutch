@@ -1,23 +1,32 @@
 # -*- coding: utf-8 -*-
+from requests.exceptions import RequestException
 
 
 def test_put_auction_data(auction, logger, mocker):
 
     mock_post_results_data = mocker.MagicMock()
     mock_announce_results_data = mocker.MagicMock()
-    mock_post_results_data.return_value = True
+    mock_post_results_data.side_effect = [True, RequestException('Unexpected error.'), False, True, True]
     mocker.patch('openprocurement.auction.insider.mixins.utils.post_results_data', mock_post_results_data)
     mocker.patch('openprocurement.auction.insider.mixins.utils.announce_results_data', mock_announce_results_data)
+    auction.generate_request_id()
 
     result = auction.put_auction_data()
 
     assert result is True
+    assert mock_post_results_data.call_count == 1
 
-    mock_post_results_data.return_value = False
-    auction.generate_request_id()
+    result = auction.put_auction_data()
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[-3] == 'Unable to post results data. Error: Unexpected error.'
+    assert log_strings[-2] == 'Auctions results not approved'
+
+    assert result is None
+    assert mock_post_results_data.call_count == 2
+
     auction.put_auction_data()
 
-    assert mock_post_results_data.call_count == 2
+    assert mock_post_results_data.call_count == 3
     assert mock_announce_results_data.call_count == 1
 
     auction.debug = False
@@ -28,7 +37,6 @@ def test_put_auction_data(auction, logger, mocker):
         autospec=True
     )
     mock_upload_audit_file_without_document_service.return_value = 'test_doc_id'
-    mock_post_results_data.return_value = True
     mock_announce_results_data.return_value = ['bid_1', 'bid_2']
     # with_document_service == False
 
@@ -39,7 +47,7 @@ def test_put_auction_data(auction, logger, mocker):
     assert mock_upload_audit_file_without_document_service.call_args_list[0] == ()
     assert mock_upload_audit_file_without_document_service.call_args_list[1][0] == ('test_doc_id', )
     assert mock_announce_results_data.call_count == 2
-    assert mock_post_results_data.call_count == 3
+    assert mock_post_results_data.call_count == 4
 
     auction.worker_defaults['with_document_service'] = True
     mock_upload_audit_file_with_document_service = mocker.patch.object(
@@ -55,7 +63,7 @@ def test_put_auction_data(auction, logger, mocker):
     assert mock_upload_audit_file_with_document_service.call_args_list[0] == ()
     assert mock_upload_audit_file_with_document_service.call_args_list[1][0] == ('test_doc_id',)
     assert mock_announce_results_data.call_count == 3
-    assert mock_post_results_data.call_count == 4
+    assert mock_post_results_data.call_count == 5
 
 
 def test_post_announce(auction, mocker):
