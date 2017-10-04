@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from collections import defaultdict
 from copy import deepcopy
 from datetime import timedelta
 from decimal import Decimal
@@ -12,12 +11,12 @@ import pytest
 from openprocurement.auction.insider.constants import (
     DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA, DUTCH_ROUNDS
 )
-from openprocurement.auction.insider.tests.data.data import tender_data, test_organization
+from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
     prepare_results_stage, calculate_next_amount,
     prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
-    lock_bids, update_stage, prepare_auction_document, get_auction_info
+    lock_bids, update_stage, prepare_auction_document
 )
 
 
@@ -182,6 +181,9 @@ def test_post_results_data(auction, logger, mocker):
     from openprocurement.auction.insider.tests.data.data import tender_data
     tender_data_copy = deepcopy(tender_data)
     auction._auction_data = tender_data_copy
+
+    mock_get_auction_info = mocker.patch.object(auction, 'get_auction_info', autospec=True)
+    mock_get_auction_info.return_value = tender_data_copy
 
     auction.generate_request_id()
 
@@ -413,7 +415,8 @@ def test_post_results_data(auction, logger, mocker):
 
     test_document = {
         'value': {
-            'currency': 'UAH'
+            'currency': 'UAH',
+            'valueAddedTaxIncluded': True
         },
         'results': [
             {
@@ -715,110 +718,3 @@ def test_prepare_auction_document(auction, mocker, logger):
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
-
-
-def test_get_auction_info(auction, logger, mocker):
-    auction.request_id = 'test_request_id'
-    tender_data_copy = deepcopy(tender_data)
-    auction._auction_data = tender_data_copy
-    auction._bids_data = defaultdict(list)
-    for bid in auction._auction_data['data']['bids']:
-        auction._bids_data[bid['id']] = bid
-
-    auction._auction_data['data']['auctionPeriod']['startDate'] = '2012-12-12'
-
-    mock_convert_datetime = mocker.patch.object(auction, 'convert_datetime', autospec=True)
-    mock_convert_datetime.return_value = 'converted_string "{}"'.format(
-        auction._auction_data['data']['auctionPeriod']['startDate']
-    )
-
-    # auction.debug is True
-    get_auction_info(auction, prepare=True)
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert log_strings[-2] == "Bidders count: 2"
-    mock_convert_datetime.assert_called_once_with(auction._auction_data['data']['auctionPeriod']['startDate'])
-    assert auction.startDate == 'converted_string "2012-12-12"'
-
-    assert auction.bidders_data == []
-    assert auction.mapping == {}
-
-    get_auction_info(auction, prepare=False)
-
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert log_strings[-2] == "Bidders count: 2"
-    assert mock_convert_datetime.call_count == 2
-    assert mock_convert_datetime.call_args[0] == (auction._auction_data['data']['auctionPeriod']['startDate'],)
-    assert auction.startDate == 'converted_string "2012-12-12"'
-
-    assert auction.bidders_data == [
-        {
-            'date': '2014-11-19T08:22:21.726234+00:00',
-            'id': 'c26d9eed99624c338ce0fca58a0aac32',
-            'owner': '',
-            'value': {
-                'amount': 0,
-                'currency': None,
-                'valueAddedTaxIncluded': True
-            }
-        },
-        {
-            'date': '2014-11-19T08:22:24.038426+00:00',
-            'id': 'e4456d02263441ffb2f00ceafa661bb2',
-            'owner': '',
-            'value': {
-                'amount': 0,
-                'currency': None,
-                'valueAddedTaxIncluded': True
-            }
-        }
-    ]
-
-    assert auction.mapping == {u'c26d9eed99624c338ce0fca58a0aac32': '1', u'e4456d02263441ffb2f00ceafa661bb2': '2'}
-
-    auction.debug = False
-    mock_get_tender_data = mocker.MagicMock()
-    get_tender_data_result = deepcopy(tender_data)
-    get_tender_data_result['data']['auctionPeriod']['startDate'] = '2013-10-10'
-    mock_convert_datetime.return_value = 'converted_string "{}"'.format(
-        get_tender_data_result['data']['auctionPeriod']['startDate']
-    )
-    mock_get_tender_data.return_value = get_tender_data_result
-    mocker.patch('openprocurement.auction.insider.utils.get_tender_data', mock_get_tender_data)
-
-    get_auction_info(auction, prepare=True)
-
-    assert mock_get_tender_data.call_count == 2
-    assert mock_convert_datetime.call_count == 4
-    assert mock_convert_datetime.call_args[0] == (get_tender_data_result['data']['auctionPeriod']['startDate'],)
-    assert auction.startDate == 'converted_string "2013-10-10"'
-    assert auction._auction_data == get_tender_data_result
-
-    mock_get_tender_data.return_value = None
-    auction.auction_document = {'test_key': 'test_value'}
-
-    mock_save_auction_document = mocker.patch.object(auction, 'save_auction_document', autospec=True)
-    mock_get_auction_document = mocker.patch.object(auction, 'get_auction_document', autospec=True)
-    mock_end_auction_event = mocker.patch.object(auction, '_end_auction_event', autospec=True)
-
-    with pytest.raises(SystemExit):
-        get_auction_info(auction, prepare=False)
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert mock_get_auction_document.call_count == 1
-    assert mock_save_auction_document.call_count == 1
-    assert auction.auction_document["current_stage"] == -100
-    assert log_strings[-2] == 'Cancel auction: UA-11111'
-    assert mock_end_auction_event.set.call_count == 1
-
-    auction.auction_document = {}
-
-    with pytest.raises(SystemExit):
-        get_auction_info(auction, prepare=False)
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert mock_get_auction_document.call_count == 2
-    assert mock_save_auction_document.call_count == 1
-    assert log_strings[-2] == 'Auction UA-11111 not exists'
-    assert mock_end_auction_event.set.call_count == 2

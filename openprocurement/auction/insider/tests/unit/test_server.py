@@ -79,6 +79,8 @@ def test_server_authorized(app):
     assert res.status_code == 403
     assert res.status == '403 FORBIDDEN'
 
+    app.application.config['auction'].mapping['f7c8cd1d56624477af8dc3aa9c4b3ea3'] = 1
+
     res = app.get('/authorized', headers=headers)
     assert res.status_code == 302
     assert res.status == '302 FOUND'
