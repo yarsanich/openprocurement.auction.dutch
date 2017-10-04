@@ -1,6 +1,8 @@
 import logging
 from copy import deepcopy
 from decimal import Decimal
+from couchdb.json import use
+import sys
 from requests import Session as RequestsSession
 from urlparse import urljoin
 from collections import defaultdict
@@ -8,11 +10,14 @@ from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
 from gevent import sleep
+import traceback
+
 from apscheduler.schedulers.gevent import GeventScheduler
 from couchdb import Database, Session
 from yaml import safe_dump as yaml_dump
 from datetime import datetime
 from dateutil.tz import tzlocal
+from functools import partial
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
 from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
@@ -33,7 +38,8 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
-    update_auction_document, lock_bids, prepare_results_stage
+    update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
+    normalize_document
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
@@ -44,6 +50,10 @@ SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
 
 SCHEDULER.timezone = TIMEZONE
 
+import simplejson
+use(encode=partial(simplejson.dumps, use_decimal=True),
+    decode=partial(simplejson.loads, use_decimal=True),
+    )
 
 
 class Auction(DutchDBServiceMixin,
@@ -219,7 +229,7 @@ class Auction(DutchDBServiceMixin,
         for bid in self.auction_document['results']:
             bid_result_audit = {
                 'bidder': bid['bidder_id'],
-                'amount': bid['amount'],
+                'amount': str(bid['amount']),
                 'time': bid['time']
             }
             if bid.get('dutch_winner', False):
@@ -252,30 +262,31 @@ class Auction(DutchDBServiceMixin,
         LOGGER.debug(
             "Clear mapping", extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
-
-        self.auction_document["current_stage"] = (len(
-            self.auction_document["stages"]) - 1)
-        self.auction_document['current_phase'] = END
-        normalized_document = deepcopy(self.auction_document)
-        for s in normalized_document['stages']:
-            if isinstance(s.get('amount'), Decimal):
-                s['amount'] = str(s['amount'])
-        LOGGER.debug(' '.join((
-            'Document in end_stage: \n', yaml_dump(dict(normalized_document))
-        )), extra={"JOURNAL_REQUEST_ID": self.request_id})
-        self.approve_audit_info_on_announcement()
-        LOGGER.info(
-            'Audit data: \n {}'.format(yaml_dump(self.audit)),
-            extra={"JOURNAL_REQUEST_ID": self.request_id}
-        )
-        self.auction_document['endDate'] = datetime.now(tzlocal()).isoformat()
-        if self.put_auction_data():
-            self.save_auction_document()
+        try:
+            self.auction_document["current_stage"] = (len(
+                self.auction_document["stages"]) - 1)
+            self.auction_document['current_phase'] = END
+            #normalized_document = normalize_document(self.auction_document)
+            #LOGGER.info()
+            self.approve_audit_info_on_announcement()
+            self.audit = normalize_audit(self.audit)
+            #LOGGER.debug(' '.join((
+            #    'Document in end_stage: \n', yaml_dump(dict(normalized_document))
+            #)), extra={"JOURNAL_REQUEST_ID": self.request_id})
+            LOGGER.info(
+                'Audit data: \n {}'.format(yaml_dump(self.audit)),
+                extra={"JOURNAL_REQUEST_ID": self.request_id}
+            )
+            LOGGER.info(self.audit)
+            self.auction_document['endDate'] = datetime.now(tzlocal()).isoformat()
+            if self.put_auction_data():
+                self.save_auction_document()
+        except Exception as e:
+            LOGGER.fatal("Error during end auction: {}".format(e))
         LOGGER.debug(
             "Fire 'stop auction worker' event",
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
-
         self._end_auction_event.set()
 
     def cancel_auction(self):

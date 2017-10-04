@@ -143,7 +143,7 @@ def form_handler():
     if current_phase == DUTCH:
         with lock_bids(auction):
             ok = auction.add_dutch_winner({
-                'amount': str(form.data['bid']),
+                'amount': form.data['bid'],
                 'time': current_time.isoformat(),
                 'bidder_id': form.data['bidder_id']
             })
@@ -177,7 +177,7 @@ def form_handler():
             if hasattr(auction, '_end_sealedbid'):
                 if not auction._end_sealedbid.is_set():
                     auction.bids_queue.put({
-                        'amount': str(form.data['bid']),
+                        'amount': form.data['bid'],
                         'time': current_time.isoformat(),
                         'bidder_id': form.data['bidder_id']
                     })
@@ -187,7 +187,7 @@ def form_handler():
             return {"status": "failed", "errors": [repr(e)]}
     elif current_phase == BESTBID:
         ok = auction.add_bestbid({
-            'amount': str(form.data['bid']),
+            'amount': form.data['bid'],
             'time': current_time.isoformat(),
             'bidder_id': form.data['bidder_id']
         })

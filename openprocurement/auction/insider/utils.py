@@ -1,12 +1,13 @@
 # -*- coding: utf-8 -*-
 import logging
 from contextlib import contextmanager
+from copy import deepcopy
 from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal
 from openprocurement.auction.utils import get_latest_bid_for_bidder,\
-    make_request, get_tender_data
+    make_request, get_tender_data, sorting_by_amount
 from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA,\
     AUCTION_WORKER_API_AUCTION_CANCEL, AUCTION_WORKER_API_AUCTION_NOT_EXIST, AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
 from openprocurement.auction.worker.utils import prepare_service_stage
@@ -54,7 +55,7 @@ def post_results_data(auction, with_auctions_results=True):
                 else None
         value = auction.auction_document['value']
         return {
-            "amount": auction_bid,
+            "amount": str(auction_bid),
             "currency": value.get('currency'),
             "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
         }
@@ -152,7 +153,7 @@ def prepare_audit(auction):
         "auctionId": auction_data["data"].get("auctionID", ""),
         "auction_id": auction.tender_id,
         "items": auction_data["data"].get("items", []),
-        "results": [],
+        "results": prepare_timeline_stage(),
         "timeline": {
             "auction_start": {},
         }
@@ -190,6 +191,23 @@ def update_stage(auction):
     run_time = datetime.now(tzlocal()).isoformat()
     auction.auction_document['stages'][current_stage]['time'] = run_time
     return run_time
+
+
+def prepare_auction_data(data):
+    return {
+        "_id":  data['data'].get('id'),
+        "auctionID": data["data"].get("auctionID", ""),
+        "procurementMethodType": data["data"].get(
+            "procurementMethodType", "default"),
+        "current_stage": -1,
+        "current_phase": "",
+        "procuringEntity": data["data"].get(
+            "procuringEntity", {}
+        ),
+        "items": data["data"].get("items", []),
+        "value": data["data"].get("value", {}),
+        "auction_type": "dutch",
+    }
 
 
 def prepare_auction_document(auction, fast_forward=False):
@@ -281,3 +299,50 @@ def prepare_auction_document(auction, fast_forward=False):
             'time': ''
         })
     return auction.auction_document
+
+
+def prepare_auction_results(auction, bids_data):
+    all_bids = deepcopy(bids_data)
+    max_bids = []
+    for bid_id in all_bids.keys():
+        bid = get_latest_bid_for_bidder(all_bids[bid_id], bid_id)
+        bid['bidder_name'] = auction.mapping[bid['bidder_id']]
+        max_bids.append(
+            prepare_results_stage(**bid)
+        )
+    return sorting_by_amount(max_bids)
+
+
+def normalize_audit(audit):
+    def normalize_bid(bid):
+        if 'amount' in bid:
+            bid['amount'] = str(bid['amount'])
+        return bid
+
+    new = deepcopy(audit)
+    audit['results']['bids'] = map(
+        normalize_bid,
+        audit.get('results', {}).get('bids', [])
+    )
+    for phase in [DUTCH, SEALEDBID, BESTBID]:
+        bids = audit['timeline'][phase].get('bids', [])
+        audit['timeline'][phase]['bids'] = map(
+            normalize_bid,
+            bids
+        )
+    for k in audit['timeline'][DUTCH].keys():
+        if k.startswith('turn'):
+            audit['timeline'][DUTCH][k]['amount'] = str(
+                audit['timeline'][DUTCH][k]['amount']
+            )
+    return audit
+
+
+def normalize_document(document):
+    normalized = deepcopy(document)
+    for field in ['results', 'stages']:
+        for index, stage in enumerate(document[field]):
+            if isinstance(stage.get('amount'), Decimal):
+                normalized[field][index]['amount'] = str(stage['amount'])
+    return normalized
+
