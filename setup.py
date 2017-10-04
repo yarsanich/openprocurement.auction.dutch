@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 VERSION = '1.0.1a1.dev12'
 INSTALL_REQUIRES = [
     'setuptools',
+    'simplejson',
     'openprocurement.auction',
     'openprocurement.auction.worker'
 ]
