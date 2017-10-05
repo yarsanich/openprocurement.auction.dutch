@@ -397,11 +397,11 @@ class SealedBidAuctionPhase(object):
                 )
                 sleep(0.1)
             LOGGER.info("Done processing bids queue")
-            if len(self._bids_data.keys()) < 2:
-                LOGGER.info("No bids on sealedbid phase. end auction")
+            self.auction_document['results'] = utils.prepare_auction_results(self, self._bids_data)
+            if len([bid for bid in self.auction_document['results'] if str(bid['amount']) != '-1']) < 2:
+                LOGGER.info("No bids on sealedbid phase. End auction now!")
                 self.end_auction()
                 return
-            self.auction_document['results'] = utils.prepare_auction_results(self, self._bids_data)
             # find sealedbid winner in auction_document
             max_bid = max(self.auction_document['results'], key=get_amount)
             LOGGER.info("Approved sealedbid winner {bidder_id} with amount {amount}".format(
