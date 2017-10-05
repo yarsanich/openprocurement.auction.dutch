@@ -77,7 +77,7 @@ class DutchDBServiceMixin(DBServiceMixin):
                     sys.exit(1)
 
         self.startDate = self.convert_datetime(
-            self._auction_data['data']['auctionPeriod']['startDate']
+            self._auction_data['data'].get('auctionPeriod', {}).get('startDate', '')
         )
         self.bidders_data = [
             {
