@@ -96,7 +96,7 @@ def test_prepare_audit(auction, mocker):
         "auctionId": '',
         "auction_id": u'UA-11111',
         "items": tender_data['data']['items'],
-        "results": [],
+        "results": 'timeline_stage_object',
         "timeline": {
             "auction_start": {},
             DUTCH: 'timeline_stage_object',

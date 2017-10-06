@@ -210,6 +210,8 @@ def test_end_sealedbid(auction, mocker, logger):
     mock_end_auction = mocker.patch.object(auction, 'end_auction', autospec=True)
 
     # No bids on sealedbid phase
+    auction.auction_document = {}
+    auction.mapping['test_bidder_id'] = ['bidder_name_from_mapping']
     result = auction.end_sealedbid(1)
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
@@ -220,7 +222,7 @@ def test_end_sealedbid(auction, mocker, logger):
     assert log_strings[-4] == "Waiting for bids to process"
     mock_sleep.assert_called_once_with(0.1)
     assert log_strings[-3] == "Done processing bids queue"
-    assert log_strings[-2] == "No bids on sealedbid phase. end auction"
+    assert log_strings[-2] == "No bids on sealedbid phase. End auction now!"
     assert mock_end_auction.call_count == 1
 
     auction._bids_data.update({'test_bidder_id_2': [{
@@ -260,7 +262,8 @@ def test_end_sealedbid(auction, mocker, logger):
     auction.end_sealedbid(1)
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
-    assert log_strings[-2] == "Done processing bids queue"
+    assert log_strings[-3] == "Done processing bids queue"
+    assert log_strings[-2] == "Approved sealedbid winner test_bidder_id_2 with amount 500001.0"
     assert auction.auction_document['current_phase'] == PREBESTBID
 
     assert len(auction.auction_document['stages']) == 2
