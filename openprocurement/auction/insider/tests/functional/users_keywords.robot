@@ -34,13 +34,13 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Поставити ставку  1  Заявку прийнято  ${dutch_amount}
 
 Спробувати зробити надто низьку ставку
-    Поставити ставку  -1  Bid value can't be less or equal current amount  ${dutch_amount}
+    Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${dutch_amount}
 
 Підвищити пропозицію переможцем голландської частини
     Поставити ставку  1  Заявку прийнято  ${sealedbid_amount}
 
 Спробувати зробити невалідну ставку переможцем голландської частини
-    Поставити ставку  -1  Bid value can't be less or equal current amount  ${bestbid_amount}
+    Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${bestbid_amount}
 
 Поставити ставку
     [Arguments]  ${step}  ${msg}  ${locator}
@@ -69,7 +69,7 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Поставити ставку  1  Заявку прийнято  ${dutch_amount}
     Capture Page Screenshot
 
-Відмінитити ставку
+Відмінити ставку
     Highlight Elements With Text On Time  Відмінити заявку
     Click Element  id=cancel-bid-button
     Wait Until Page Contains  Заявку відмінено  10s
