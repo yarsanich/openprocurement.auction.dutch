@@ -1,7 +1,7 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = '1.0.1a1.dev13'
+VERSION = '1.0.2a1.dev13'
 INSTALL_REQUIRES = [
     'setuptools',
     'simplejson',
