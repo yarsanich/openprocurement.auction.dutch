@@ -49,7 +49,7 @@ def main():
         worker_defaults['handlers']['journal']['TENDERS_API_URL'] = worker_defaults['resource_api_server']
         logging.config.dictConfig(worker_defaults)
     else:
-        print "Auction worker defaults config not exists!!!"
+        print("Auction worker defaults config not exists!!!")
         sys.exit(1)
 
     if args.auction_info_from_db:
@@ -75,6 +75,8 @@ def main():
         auction.cancel_auction()
     elif args.cmd == 'reschedule':
         auction.reschedule_auction()
+    elif args.cmd == 'prepare':
+        auction.prepare_auction()
 
 
 if __name__ == "__main__":

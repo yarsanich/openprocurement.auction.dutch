@@ -193,20 +193,11 @@ def update_stage(auction):
     return run_time
 
 
-def prepare_auction_data(data):
+def prepare_auction_data(_id):
     return {
-        "_id":  data['data'].get('id'),
-        "auctionID": data["data"].get("auctionID", ""),
-        "procurementMethodType": data["data"].get(
-            "procurementMethodType", "default"),
-        "current_stage": -1,
-        "current_phase": "",
-        "procuringEntity": data["data"].get(
-            "procuringEntity", {}
-        ),
-        "items": data["data"].get("items", []),
-        "value": data["data"].get("value", {}),
+        "_id":  _id,
         "auction_type": "dutch",
+        'onHold': True
     }
 
 

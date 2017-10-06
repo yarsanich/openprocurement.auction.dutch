@@ -122,25 +122,16 @@ class DutchDBServiceMixin(DBServiceMixin):
         self.save_auction_document()
 
     def prepare_auction(self):
-        self.generate_request_id()
-        auction_data = get_tender_data(
-            self.tender_url,
-            request_id=self.request_id,
-            session=self.session
-        )
         public_document = self.get_auction_document()
 
         self.auction_document = {}
         if public_document:
             self.auction_document = {"_rev": public_document["_rev"]}
 
-        if auction_data:
-            LOGGER.info("Prepare insider auction id={}".format(self.auction_doc_id))
-            self.auction_document = utils.prepare_auction_data(auction_data)
-            self.save_auction_document()
-        else:
-            LOGGER.warn("Auction {} not exists".format(self.auction_doc_id))
-
+        self.auction_document.update(utils.prepare_auction_data(self.auction_doc_id))
+        self.save_auction_document()
+        LOGGER.info("Prepare insider auction id={}".format(self.auction_doc_id))
+ 
     def get_auction_document(self, force=False):
         retries = self.retries
         while retries:
