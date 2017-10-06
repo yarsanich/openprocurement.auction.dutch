@@ -101,12 +101,11 @@ def test_approve_dutch_winner(auction, logger, mocker):
     assert auction.audit['timeline'][DUTCH]['bids'][0] == result_bid
     assert auction._bids_data['test_bidder_id'][0] == result_bid
 
-    auction.auction_document['stages'] = []
     result = auction.approve_dutch_winner('bid')
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
     assert result is False
-    assert log_strings[-2] == "Unable to post dutch winner. Error: list index out of range"
+    assert log_strings[-2] == "Unable to post dutch winner. Error: 'str' object does not support item assignment"
 
 
 def test_add_dutch_winner(auction, logger, mocker):

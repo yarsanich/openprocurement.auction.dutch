@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import pytest
+from gevent.event import Event
 from munch import munchify
 from openprocurement.auction.insider.constants import (
     DUTCH, SEALEDBID, BESTBID
@@ -58,6 +59,7 @@ def test_form_handler_error_on_sealedbid(app, mocker):
     )
     magic_form = mocker.MagicMock()
     magic_form.validate.return_value = True
+    app.application.config['auction']._end_sealedbid = Event()
     app.application.bids_form = mocker.MagicMock()
     app.application.bids_form.from_json.return_value = magic_form
     mocker.patch('openprocurement.auction.insider.forms.request', munchify({'json': {}, 'headers': {}}))
