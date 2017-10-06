@@ -425,8 +425,11 @@ class BestBidAuctionPhase(object):
                 " on {time}".format(**bid)
             )
             bid['dutch_winner'] = True
-            self._bids_data[bid['bidder_id']].append(bid)
-            self.audit['timeline'][BESTBID]['bids'].append({k: str(v) for k, v in bid.items()})
+            for lst in [
+                self._bids_data[bid['bidder_id']],
+                self.audit['timeline'][BESTBID]['bids']
+            ]:
+                lst.append(bid)
             return True
         return False
 
