@@ -75,8 +75,6 @@ def main():
         auction.cancel_auction()
     elif args.cmd == 'reschedule':
         auction.reschedule_auction()
-    elif args.cmd == 'prepare':
-        auction.prepare_auction()
 
 
 if __name__ == "__main__":
