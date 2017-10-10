@@ -16,7 +16,7 @@ LOGGER = logging.getLogger('Openprocurement Auction')
 class InsiderPlanning(Planning):
 
     def __iter__(self):
-        if self.item['status'] == "active.tendering":
+        if self.item['status'] in ["active.tendering", "active.auction"]:
             if 'auctionPeriod' in self.item \
                     and 'startDate' in self.item['auctionPeriod'] \
                     and 'endDate' not in self.item['auctionPeriod']:
