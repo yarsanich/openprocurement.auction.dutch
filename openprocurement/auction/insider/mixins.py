@@ -24,6 +24,7 @@ from openprocurement.auction.insider import utils
 from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, BESTBID
 
+from flask import abort
 
 LOGGER = logging.getLogger("Auction Worker Insider")
 
@@ -300,9 +301,10 @@ class DutchAuctionPhase(object):
                 }
             )
             try:
+                bid['bidder_name'] = self.mapping.get(bid['bidder_id'], False)
+                bidder_id = bid['bidder_id']
                 bid = self.approve_dutch_winner(bid)
                 if bid:
-                    bid['bidder_name'] = self.mapping[bid['bidder_id']]
                     result = utils.prepare_results_stage(**bid)
                     self.auction_document['stages'][self.auction_document['current_stage']].update(
                         result

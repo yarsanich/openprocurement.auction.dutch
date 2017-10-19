@@ -294,7 +294,7 @@ def test_server_postbid_and_form_handler(app):
     assert res.status_code == 200
     assert json.loads(res.data) == {
         u'status': u'failed',
-        u'errors': [u"KeyError(u'f7c8cd1d56624477af8dc3aa9c4b3ea3',)"]
+        u'errors': [[u'Bad bidder!']]
     }
 
     # Prepare auction

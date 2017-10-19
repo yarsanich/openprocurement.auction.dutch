@@ -24,7 +24,7 @@ def prepare_users_data(tender_data):
     users_data = {}
     for index, bid in enumerate(tender_data["bids"]):
         signer = Signer(auction_worker_defaults_info["SIGNATURE_KEY"].decode('hex'))
-        signature = quote(b64encode(signer.signature(str(bid['id']))))
+        signature = quote(b64encode(signer.signature("{}_{}".format("11111111111111111111111111111111", str(bid['id'])))))
         users_data[bid["id"]] = {
             'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
                 bid["id"], signature

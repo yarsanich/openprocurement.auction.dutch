@@ -142,6 +142,13 @@ def form_handler():
         return {'status': 'failed', 'errors': form.errors}
     if current_phase == DUTCH:
         with lock_bids(auction):
+            bidder_id = form.data['bidder_id']
+            if bidder_id not in auction.mapping:
+                auction.get_auction_info()
+                if bidder_id not in auction.mapping:
+                    app.logger.fatal(
+                        "CRITICAL! Bad bidder, that not registered in API")  # XXX TODO create a way to ban this user
+                    return {"status": "failed", "errors": [["Bad bidder!"]]}
             ok = auction.add_dutch_winner({
                 'amount': form.data['bid'],
                 'time': current_time.isoformat(),
@@ -170,7 +177,7 @@ def form_handler():
                     ),
                     extra=prepare_extra_journal_fields(request.headers)
                 )
-                return {"status": "failed", "errors": [repr(ok)]}
+                return {"status": "failed", "errors": [[repr(ok)]]}
 
     elif current_phase == SEALEDBID:
         try:

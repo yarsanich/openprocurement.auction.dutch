@@ -43,13 +43,13 @@ ${BROWSER}       chrome
     Press Key  xpath=/html/body/div/div[1]/div/div[1]/div[1]/button     \\27
     sleep  1s
 
-Дочекатистись паузи до ${stage_name} етапу
+Дочекатись паузи до ${stage_name} етапу
     Wait Until Page Contains  ${stage_name}  10 min
 
-Дочекатистись завершення паузи перед ${stage_name} етапом
+Дочекатись завершення паузи перед ${stage_name} етапом
     Wait Until Page Does Not Contain  → ${stage_name}  10 min
 
-Дочекатистись завершення аукціону
+Дочекатись завершення аукціону
     Wait Until Page Contains  Аукціон завершився  10 min
 
 Перевірити інформацію про тендер

@@ -170,8 +170,8 @@ def test_add_dutch_winner(auction, logger, mocker):
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
     assert log_strings[-3] == '---------------- Adding dutch winner  ----------------'
-    assert log_strings[-2] == "Exception during initialization dutch winner. Error: 'NoneType' object has no attribute '__getitem__'"
-    assert isinstance(result, TypeError)
+    assert log_strings[-2] == "Exception during initialization dutch winner. Error: 'NoneType' object has no attribute 'get'"
+    assert isinstance(result, AttributeError)
 
 
 def test_end_dutch(auction, logger, mocker):
