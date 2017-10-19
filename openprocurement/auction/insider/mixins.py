@@ -12,6 +12,7 @@ from gevent import spawn, sleep
 from gevent.event import Event
 from functools import partial
 
+from wtforms.validators import ValidationError
 from openprocurement.auction.utils import get_tender_data
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin
@@ -24,6 +25,7 @@ from openprocurement.auction.insider import utils
 from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, BESTBID
 
+from flask import abort
 
 LOGGER = logging.getLogger("Auction Worker Insider")
 
@@ -300,9 +302,16 @@ class DutchAuctionPhase(object):
                 }
             )
             try:
+                bid['bidder_name'] = self.mapping.get(bid['bidder_id'], False)
+                bidder_id = bid['bidder_id']
+                if bidder_id not in self.mapping:
+                    self.get_auction_info()
+                    if bidder_id not in self.mapping:
+                        LOGGER.fatal(
+                            "CRITICAL! Bad bidder, that not registered in API")  # XXX TODO create a way to ban this user
+                        raise Exception("Bad bidder")
                 bid = self.approve_dutch_winner(bid)
                 if bid:
-                    bid['bidder_name'] = self.mapping[bid['bidder_id']]
                     result = utils.prepare_results_stage(**bid)
                     self.auction_document['stages'][self.auction_document['current_stage']].update(
                         result

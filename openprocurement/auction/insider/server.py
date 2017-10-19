@@ -3,8 +3,11 @@ import iso8601
 
 from urlparse import urljoin
 from flask_oauthlib.client import OAuth
-from flask import Flask, request, jsonify,\
-    url_for, session, abort, redirect
+from flask import (
+    Flask, request, jsonify,
+    url_for, session, abort,
+    redirect
+)
 
 from gevent.pywsgi import WSGIServer
 from gevent import spawn
@@ -20,9 +23,11 @@ from openprocurement.auction.insider.constants import INVALIDATE_GRANT
 from openprocurement.auction.helpers.system import get_lisener
 from openprocurement.auction.utils import create_mapping,\
     prepare_extra_journal_fields, get_bidder_id
-from openprocurement.auction.event_source import sse, send_event,\
-    send_event_to_client, remove_client,\
+from openprocurement.auction.insider.event_source import sse
+from openprocurement.auction.event_source import (
+    send_event,send_event_to_client, remove_client,
     push_timestamps_events, check_clients
+)
 
 
 app = Flask(__name__)
@@ -75,11 +80,6 @@ def authorized():
         app.logger.info("Error Response from Oauth: {}".format(resp))
         return abort(403, 'Access denied')
     bidder_data = get_bidder_id(app, session)
-    bidder_id = bidder_data['bidder_id']
-    if bidder_id not in app.config['auction'].mapping:
-        app.config['auction'].get_auction_info()
-        if bidder_id not in app.config['auction'].mapping:
-            return abort(403)
     app.logger.info("Bidder {} with client_id {} authorized".format(
                     bidder_data['bidder_id'], session['client_id'],
                     ), extra=prepare_extra_journal_fields(request.headers))
