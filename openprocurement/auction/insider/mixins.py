@@ -304,12 +304,6 @@ class DutchAuctionPhase(object):
             try:
                 bid['bidder_name'] = self.mapping.get(bid['bidder_id'], False)
                 bidder_id = bid['bidder_id']
-                if bidder_id not in self.mapping:
-                    self.get_auction_info()
-                    if bidder_id not in self.mapping:
-                        LOGGER.fatal(
-                            "CRITICAL! Bad bidder, that not registered in API")  # XXX TODO create a way to ban this user
-                        raise Exception("Bad bidder")
                 bid = self.approve_dutch_winner(bid)
                 if bid:
                     result = utils.prepare_results_stage(**bid)
