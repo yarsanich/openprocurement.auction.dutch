@@ -12,7 +12,6 @@ from gevent import spawn, sleep
 from gevent.event import Event
 from functools import partial
 
-from wtforms.validators import ValidationError
 from openprocurement.auction.utils import get_tender_data
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin
