@@ -8,8 +8,7 @@ Library        openprocurement.auction.insider.tests.functional.service_keywords
 *** Variables ***
 ${USERS}
 ${USERS_ids}
-${BROWSER}       chrome
-
+${BROWSER}       phantomjs
 *** Keywords ***
 Отримати вхідні дані
     ${TENDER}=  prepare_tender_data
