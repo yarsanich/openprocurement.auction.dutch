@@ -25,6 +25,10 @@ def validate_bid_value(form, field):
     phase = form.document.get('current_phase')
     if phase == DUTCH:
         try:
+            for bid in form.document['results']:
+                if 'dutch_winner' in bid:
+                    raise ValidationError(
+                        u"The same bid has already been submitted.")
             current_stage = form.document['current_stage']
             current_amount = form.document['stages'][current_stage].get(
                 'amount',
@@ -125,6 +129,7 @@ def form_handler():
     form.document = auction.auction_document
     current_time = datetime.now(timezone('Europe/Kiev'))
     current_phase = form.document.get('current_phase')
+    current_stage = form.document.get('current_stage')
     if not form.validate():
         app.logger.info(
             "Bidder {} with client_id {} wants place bid {} in {} on phase {} "
@@ -152,7 +157,8 @@ def form_handler():
             ok = auction.add_dutch_winner({
                 'amount': form.data['bid'],
                 'time': current_time.isoformat(),
-                'bidder_id': form.data['bidder_id']
+                'bidder_id': form.data['bidder_id'],
+                'current_stage': current_stage
             })
             if not isinstance(ok, Exception):
                 app.logger.info(

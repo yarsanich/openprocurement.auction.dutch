@@ -303,10 +303,16 @@ class DutchAuctionPhase(object):
             try:
                 bid['bidder_name'] = self.mapping.get(bid['bidder_id'], False)
                 bidder_id = bid['bidder_id']
+                current_stage = bid['current_stage']
+                del bid['current_stage']
+                if current_stage != self.auction_document['current_stage']:
+                    raise Exception(
+                        u"Your bid is not submitted since the previous "
+                        "step has already ended.")
                 bid = self.approve_dutch_winner(bid)
                 if bid:
                     result = utils.prepare_results_stage(**bid)
-                    self.auction_document['stages'][self.auction_document['current_stage']].update(
+                    self.auction_document['stages'][current_stage].update(
                         result
                     )
                     self.auction_document['results'].append(
