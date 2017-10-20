@@ -134,7 +134,8 @@ def test_add_dutch_winner(auction, logger, mocker):
         'results': []
     }
 
-    bid = {'bidder_id': 'test_bidder_id'}
+    bid = {'bidder_id': 'test_bidder_id',
+           'current_stage': 1}
 
     mock_prepare_results_stage = mocker.MagicMock()
     mock_prepare_results_stage.return_value = {
