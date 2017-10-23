@@ -53,7 +53,7 @@ def event_source():
                 if bidder_info['id'] == bidder:
                     valid_bidder = True
                     break
-            if current_app.config['auction'].auction_document.get('current_phase', '') in ['dutch', 'pre-started']:
+            if current_app.config['auction'].auction_document.get('current_phase', '') in ['dutch', 'pre-started', 'pre-sealedbid']:
                 valid_bidder = True
             if valid_bidder:
                 if bidder not in current_app.auction_bidders:

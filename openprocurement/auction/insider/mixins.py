@@ -24,7 +24,6 @@ from openprocurement.auction.insider import utils
 from openprocurement.auction.insider.constants import DUTCH,\
     SEALEDBID, PREBESTBID, PRESEALEDBID, BESTBID
 
-from flask import abort
 
 LOGGER = logging.getLogger("Auction Worker Insider")
 
@@ -302,7 +301,6 @@ class DutchAuctionPhase(object):
             )
             try:
                 bid['bidder_name'] = self.mapping.get(bid['bidder_id'], False)
-                bidder_id = bid['bidder_id']
                 current_stage = bid['current_stage']
                 del bid['current_stage']
                 if current_stage != self.auction_document['current_stage']:
@@ -384,6 +382,7 @@ class SealedBidAuctionPhase(object):
             self._end_sealedbid = Event()
             run_time = utils.update_stage(self)
             self.auction_document['current_phase'] = SEALEDBID
+            self.get_auction_info()
             self.audit['timeline'][SEALEDBID]['timeline']['start'] =\
                 run_time
             spawn(self.add_bid)
