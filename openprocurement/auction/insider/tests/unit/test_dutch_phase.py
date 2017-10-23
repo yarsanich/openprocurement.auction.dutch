@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import datetime
 import dateutil.parser
+import pytest
 
 from openprocurement.auction.insider.constants import DUTCH
 
@@ -165,6 +166,16 @@ def test_add_dutch_winner(auction, logger, mocker):
     assert log_strings[-2] == 'Approved dutch winner'
     assert mock_end_dutch.call_count == 1
     assert result is True
+
+    auction.auction_document['current_stage'] = 2
+    bid = {'bidder_id': 'test_bidder_id', 'current_stage': 1}
+    result = auction.add_dutch_winner(bid)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert isinstance(result, Exception)
+    assert result.message == u"Your bid is not submitted since the previous step has already ended."
+
+    assert log_strings[-3] == '---------------- Adding dutch winner  ----------------'
+    assert log_strings[-2] == 'Exception during initialization dutch winner. Error: Your bid is not submitted since the previous step has already ended.'
 
     auction.mapping = None
     result = auction.add_dutch_winner(bid)
