@@ -5,18 +5,25 @@ import os
 import pytest
 import yaml
 import couchdb
+import json
 
 from dateutil.tz import tzlocal
 from flask import redirect
 from mock import MagicMock
 from pytz import timezone as tz
 from StringIO import StringIO
+from mock import patch
 
 from openprocurement.auction.insider.auction import Auction, SCHEDULER
 from openprocurement.auction.insider.server import app as server_app
-from openprocurement.auction.insider.forms import BidsForm
+from openprocurement.auction.insider.forms import BidsForm, form_handler
 from openprocurement.auction.insider.mixins import LOGGER
-from openprocurement.auction.insider.tests.data.data import tender_data
+from openprocurement.auction.insider.constants import (
+    PRESEALEDBID, SEALEDBID, PREBESTBID
+)
+from openprocurement.auction.insider.tests.data.data import (
+    tender_data, bidders
+)
 
 
 def update_auctionPeriod(data):
@@ -89,7 +96,6 @@ def bids_form(auction, db):
 
 @pytest.yield_fixture(scope='function')
 def app(db):
-    new_app = server_app
     update_auctionPeriod(tender_data)
     logger = MagicMock()
     logger.name = 'some-logger'
@@ -125,24 +131,13 @@ def app(db):
         None, authorized_response, authorized_response]
     server_app.remote_oauth.authorize.return_value = \
         redirect('https://my.test.url')
-    server_app.logins_cache[(u'aMALGpjnB1iyBwXJM6betfgT4usHqw', '')] = {
-        u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3',
-        u'expires':
-            (datetime.datetime.now(tzlocal()) +
-             datetime.timedelta(0, 600)).isoformat()
-    }
-    server_app.logins_cache[(u'aMALGpjnB1iyBwXJM6betfgT4usZZZ', '')] = {
-        u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea4',
-        u'expires':
-            (datetime.datetime.now(tzlocal()) +
-             datetime.timedelta(0, 600)).isoformat()
-    }
-    server_app.logins_cache[(u'aMALGpjnB1iyBwXJM6betfgT4usYYY', '')] = {
-        u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea5',
-        u'expires':
-            (datetime.datetime.now(tzlocal()) +
-             datetime.timedelta(0, 600)).isoformat()
-    }
+    for bidder in bidders.values():
+        server_app.logins_cache[bidder['remote_oauth']] = {
+            u'bidder_id': bidder['bidder_id'],
+            u'expires':
+                (datetime.datetime.now(tzlocal()) +
+                 datetime.timedelta(0, 600)).isoformat()
+        }
     server_app.auction_bidders = {
         u'f7c8cd1d56624477af8dc3aa9c4b3ea3': {
             'clients': {},
@@ -150,6 +145,41 @@ def app(db):
         }}
 
     yield server_app.test_client()
+
+
+@pytest.yield_fixture(scope='function')
+def auction_app(app):
+    for bidder in bidders.values():
+        if bidder['bidder_id'] == '2' * 32 or bidder['bidder_id'] == '1' * 32:
+            continue
+        app.application.config['auction'].bidders_data.append(
+            {'id': bidder['bidder_id']})
+        app.application.config['auction'].mapping[bidder['bidder_id']] = \
+            len(app.application.config['auction'].mapping) + 1
+    app.application.form_handler = form_handler
+    yield app
+
+
+@pytest.yield_fixture(scope='function')
+def sealedbid_app(auction_app):
+    headers = {'Content-Type': 'application/json'}
+    session = {
+        'remote_oauth': None,
+        'client_id': 'b3a000cdd006b4176cc9fafb46be0273'
+    }
+    stage = \
+        auction_app.application.config['auction'].auction_document['stages'][1]
+    for i in xrange(0, 6):
+        auction_app.application.config['auction'].next_stage(stage)
+    data = {
+        'bidder_id': bidders['dutch_bidder']['bidder_id'],
+        'bid': 33250
+    }
+    session['remote_oauth'] = bidders['dutch_bidder']['remote_oauth']
+    with patch('openprocurement.auction.insider.server.session', session), \
+         patch('openprocurement.auction.insider.forms.session', session):
+        auction_app.post('/postbid', data=json.dumps(data), headers=headers)
+    yield auction_app
 
 
 def pytest_addoption(parser):
