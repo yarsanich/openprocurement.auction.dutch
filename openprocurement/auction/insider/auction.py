@@ -337,7 +337,7 @@ class Auction(DutchDBServiceMixin,
         auction_data = self.get_auction_document()
         self._auction_data = {"data": auction_data}
         self.audit = prepare_audit(self)
-        self.audit['timeline']['auction_start']['time'] = datetime.now(tzlocal()).isoformat()
+        self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
         self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['time']
         for index, stage in enumerate(self.auction_document["stages"]):
             if stage.get('dutch_winner', False):
