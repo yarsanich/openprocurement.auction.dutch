@@ -1,16 +1,11 @@
 import logging
-from copy import deepcopy
-from decimal import Decimal
 from couchdb.json import use
-import sys
 from requests import Session as RequestsSession
 from urlparse import urljoin
 from collections import defaultdict
 from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
-from gevent import sleep
-import traceback
 
 from apscheduler.schedulers.gevent import GeventScheduler
 from couchdb import Database, Session
@@ -333,3 +328,54 @@ class Auction(DutchDBServiceMixin,
                     'MESSAGE_ID': AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND
                 }
             )
+
+    def post_audit(self):
+        """
+            method that generate audit from auction document from db
+        """
+        self.generate_request_id()
+        auction_data = self.get_auction_document()
+        self._auction_data = {"data": auction_data}
+        self.audit = prepare_audit(self)
+        self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
+        self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['time']
+        for index, stage in enumerate(self.auction_document["stages"]):
+            if stage.get('dutch_winner', False):
+                bid = {
+                    'time': stage['time'],
+                    'amount': stage['amount'],
+                    'dutch_winner': True
+                }
+                self.audit['timeline'][DUTCH]['bids'].append(bid)  # Dutch winner
+                break
+            if stage["type"].startswith("dutch"):
+                turn = "turn_{}".format(index)
+                self.audit['timeline'][DUTCH][turn] = {
+                    'amount': stage['amount'],
+                    'time': stage['time'],
+                }
+        for stage in self.auction_document['stages']:
+            if stage['type'] == 'pre-sealedbid':
+                self.audit['timeline'][DUTCH]['timeline']['end'] = stage['time']
+            elif stage['type'] == 'sealedbid':
+                self.audit['timeline'][SEALEDBID]['timeline']['start'] = stage['time']
+            elif stage['type'] == 'pre-bestbid':
+                self.audit['timeline'][SEALEDBID]['timeline']['end'] = stage['time']
+            elif stage['type'] == 'bestbid':
+                self.audit['timeline'][BESTBID]['timeline']['start'] = stage['time']
+            elif stage['type'] == 'announcement':
+                self.audit['timeline'][BESTBID]['timeline']['end'] = stage['time']
+        # Add sealedbid and bestbid bids
+        for bid in self.auction_document['results']:
+            if bid.get('amount', False) and not bid.get('dutch_winner', False):
+                self.audit['timeline'][SEALEDBID]['bids'].append(bid)
+            elif bid.get('dutch_winner', False) and bid['amount'] != self.audit['timeline'][DUTCH]['bids'][0]:
+                self.audit['timeline'][BESTBID]['bids'].append(bid)
+        self.approve_audit_info_on_announcement()
+        self.audit = normalize_audit(self.audit)
+        LOGGER.info(
+            'Audit data: \n {}'.format(yaml_dump(self.audit)),
+            extra={"JOURNAL_REQUEST_ID": self.request_id}
+        )
+        LOGGER.info(self.audit)
+        self.put_auction_data()
