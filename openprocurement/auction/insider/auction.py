@@ -378,4 +378,7 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
         LOGGER.info(self.audit)
-        self.put_auction_data()
+        if self.worker_defaults.get('with_document_service', False):
+            self.upload_audit_file_with_document_service()
+        else:
+            self.upload_audit_file_without_document_service()
