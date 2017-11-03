@@ -7,7 +7,7 @@ REQUEST_QUEUE_SIZE = -1
 REQUEST_QUEUE_TIMEOUT = 32
 # DUTCH_TIMEDELTA = timedelta(hours=5, minutes=15)
 
-DUTCH_ROUNDS = 80
+DUTCH_ROUNDS = 81
 DUTCH_DOWN_STEP = Decimal('0.01')
 MULTILINGUAL_FIELDS = ["title", "description"]
 ADDITIONAL_LANGUAGES = ["ru", "en"]
