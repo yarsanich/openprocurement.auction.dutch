@@ -165,4 +165,4 @@ def test_prepare_auction_document(auction, mocker):
     assert mock_get_auction_document.call_count == 2
     assert mock_save_auction_document.call_count == 2
     assert mock_get_auction_info.call_count == 2
-    assert len(auction.auction_document['stages']) == 86
+    assert len(auction.auction_document['stages']) == 87
