@@ -11,6 +11,7 @@ from dateutil.tz import tzlocal
 from gevent import spawn, sleep
 from gevent.event import Event
 from functools import partial
+from dateutil import parser
 
 from openprocurement.auction.utils import get_tender_data
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
@@ -393,10 +394,7 @@ class SealedBidAuctionPhase(object):
             = run_time
 
     def end_sealedbid(self, stage):
-        def get_amount(bid):
-            return bid['amount']
         with utils.update_auction_document(self):
-
             self._end_sealedbid.set()
             while not self.bids_queue.empty():
                 LOGGER.info(
@@ -410,7 +408,11 @@ class SealedBidAuctionPhase(object):
                 self.end_auction()
                 return
             # find sealedbid winner in auction_document
-            max_bid = max(self.auction_document['results'], key=get_amount)
+            max_bid = self.auction_document['results'][0]
+            for bid in self.auction_document['results']:
+                if bid['amount'] >= max_bid['amount'] and parser.parse(bid['time'] ) < parser.parse(max_bid['time']) \
+                                                     or max_bid.get('dutch_winner', False):
+                    max_bid = bid
             LOGGER.info("Approved sealedbid winner {bidder_id} with amount {amount}".format(
                 **max_bid
                 ))
