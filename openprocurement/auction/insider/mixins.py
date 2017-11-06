@@ -410,8 +410,10 @@ class SealedBidAuctionPhase(object):
             # find sealedbid winner in auction_document
             max_bid = self.auction_document['results'][0]
             for bid in self.auction_document['results']:
-                if bid['amount'] >= max_bid['amount'] and parser.parse(bid['time'] ) < parser.parse(max_bid['time']) \
-                                                     or max_bid.get('dutch_winner', False):
+                if bid['amount'] > max_bid['amount'] or \
+                  (bid['amount'] == max_bid['amount'] and
+                   parser.parse(bid['time']) < parser.parse(max_bid['time'])) or \
+                  max_bid.get('dutch_winner', False):
                     max_bid = bid
             LOGGER.info("Approved sealedbid winner {bidder_id} with amount {amount}".format(
                 **max_bid
