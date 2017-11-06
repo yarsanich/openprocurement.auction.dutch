@@ -185,7 +185,36 @@ def test_approve_audit_info_on_sealedbid(auction, run_time):
     assert auction.audit['timeline'][SEALEDBID]['timeline']['end'] == run_time
 
 
-def test_end_sealedbid(auction, mocker, logger):
+@pytest.mark.parametrize(
+    "winner,loser",
+    [
+        (
+            {'bidder_name': 'test_bid_2',
+             'bidder_id': 'test_bidder_id_2',
+             'time': '2017-11-06T16:10:34.919011',
+             'amount': 500001.0},
+            {'bidder_name': 'test_bid_3',
+             'bidder_id': 'test_bidder_id_3',
+             'time': '2017-11-06T16:09:34.919011',
+             'amount': 500000.0},
+
+        ),
+        (
+            {'bidder_name': 'test_bid_2',
+             'bidder_id': 'test_bidder_id_2',
+             'time': '2017-11-06T16:09:34.919011',
+             'amount': 500000.0},
+            {'bidder_name': 'test_bid_3',
+             'bidder_id': 'test_bidder_id_3',
+             'time': '2017-11-06T16:10:34.919011',
+             'amount': 500000.0},
+
+        ),
+
+    ],
+    ids=['winner by amount', 'winner by time']
+)
+def test_end_sealedbid(auction, mocker, logger, winner, loser):
     mock_update_auction_document = mocker.MagicMock()
     mock_sleep = mocker.MagicMock()
     mocker.patch('openprocurement.auction.insider.mixins.utils.update_auction_document', mock_update_auction_document)
@@ -203,7 +232,7 @@ def test_end_sealedbid(auction, mocker, logger):
     auction._bids_data = {'test_bidder_id': [{
             'bidder_name': 'test_bid',
             'bidder_id': 'test_bidder_id',
-            'time': 0,
+            'time': '2017-11-06T16:07:34.919011',
             'amount': 450000.0,
             'dutch_winner': True}]
     }
@@ -225,19 +254,9 @@ def test_end_sealedbid(auction, mocker, logger):
     assert log_strings[-2] == "No bids on sealedbid phase. End auction now!"
     assert mock_end_auction.call_count == 1
 
-    auction._bids_data.update({'test_bidder_id_2': [{
-        'bidder_name': 'test_bid_2',
-        'bidder_id': 'test_bidder_id_2',
-        'time': 0,
-        'amount': 500001.0}
-    ]})
+    auction._bids_data.update({'test_bidder_id_2': [winner]})
 
-    auction._bids_data.update({'test_bidder_id_3': [{
-        'bidder_name': 'test_bid_3',
-        'bidder_id': 'test_bidder_id_3',
-        'time': 0,
-        'amount': 500000.0}
-    ]})
+    auction._bids_data.update({'test_bidder_id_3': [loser]})
 
     auction.auction_document = {
         'initial_value': 'initial_value',
@@ -263,27 +282,36 @@ def test_end_sealedbid(auction, mocker, logger):
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
     assert log_strings[-3] == "Done processing bids queue"
-    assert log_strings[-2] == "Approved sealedbid winner test_bidder_id_2 with amount 500001.0"
+    assert log_strings[-2] == "Approved sealedbid winner test_bidder_id_2 with amount {}".format(winner['amount'])
     assert auction.auction_document['current_phase'] == PREBESTBID
 
     assert len(auction.auction_document['stages']) == 2
-    assert auction.auction_document['stages'][1]['amount'] == 500001.0
-    assert auction.auction_document['stages'][1]['bidder_id'] == 'test_bidder_id_2'
+    assert auction.auction_document['stages'][1]['amount'] == winner['amount']
+    assert auction.auction_document['stages'][1]['bidder_id'] == winner['bidder_id']
     assert auction.auction_document['stages'][1]['label']['en'] == "Bidder #['bidder_name_from_mapping_2']"
     assert auction.auction_document['stages'][1]['sealedbid_winner'] is True
-    assert auction.auction_document['stages'][1]['time'] == '0'
+    assert auction.auction_document['stages'][1]['time'] == winner['time']
 
     assert len(auction.auction_document['results']) == 3
     assert auction.auction_document['results'][0]['amount'] == 450000.0
     assert auction.auction_document['results'][0]['bidder_id'] == 'test_bidder_id'
     assert auction.auction_document['results'][0]['dutch_winner'] is True
     assert auction.auction_document['results'][0]['label']['en'] == "Bidder #['bidder_name_from_mapping']"
-    assert auction.auction_document['results'][1]['amount'] == 500000.0
-    assert auction.auction_document['results'][1]['bidder_id'] == 'test_bidder_id_3'
-    assert auction.auction_document['results'][1]['label']['en'] == "Bidder #['bidder_name_from_mapping_3']"
-    assert auction.auction_document['results'][2]['amount'] == 500001.0
-    assert auction.auction_document['results'][2]['bidder_id'] == 'test_bidder_id_2'
-    assert auction.auction_document['results'][2]['label']['en'] == "Bidder #['bidder_name_from_mapping_2']"
+
+    assert {'amount': winner['amount'],
+            'bidder_id': 'test_bidder_id_2',
+            'label': {'en': "Bidder #['bidder_name_from_mapping_2']",
+                      'ru': "Участник №['bidder_name_from_mapping_2']",
+                      'uk': "Учасник №['bidder_name_from_mapping_2']"},
+            'sealedbid_winner': True,
+            'time': winner['time']} in auction.auction_document['results']
+
+    assert {'amount': loser['amount'],
+            'bidder_id': 'test_bidder_id_3',
+            'label': {'en': "Bidder #['bidder_name_from_mapping_3']",
+                      'ru': "Участник №['bidder_name_from_mapping_3']",
+                      'uk': "Учасник №['bidder_name_from_mapping_3']"},
+            'time': loser['time']} in auction.auction_document['results']
 
     mock_update_stage.assert_called_once_with(auction)
     mock_approve_audit_info_on_sealedbid.assert_called_once_with('run_time_value')
