@@ -13,7 +13,7 @@ from gevent.event import Event
 from functools import partial
 from dateutil import parser
 
-from openprocurement.auction.utils import get_tender_data
+from openprocurement.auction.utils import get_tender_data, get_latest_bid_for_bidder
 from openprocurement.auction.worker.mixins import DBServiceMixin,\
     PostAuctionServiceMixin
 from openprocurement.auction.worker.journal import\
@@ -438,7 +438,11 @@ class BestBidAuctionPhase(object):
             bid['dutch_winner'] = True
             # Handle cancel of bid set previous bid from dutch phase
             if bid['amount'] == -1:
-                bid['amount'] = self._bids_data[bid['bidder_id']][0]['amount']
+                # Get bid from dutch phase
+                bid['amount'] = self._bids_data[bid['bidder_id']][0]['amount']  # First dutch winner bid
+                LOGGER.info(
+                    "Dutch winner id={bidder_id} cancel bid on {time} back to amount from dutch phase {amount}".format(**bid)
+                )
             for lst in [
                 self._bids_data[bid['bidder_id']],
                 self.audit['timeline'][BESTBID]['bids']
@@ -459,7 +463,7 @@ class BestBidAuctionPhase(object):
                 )
                 return True
         except Exception as e:
-            LOGGER.info(
+            LOGGER.fatal(
                 "Falied to update dutch winner. Error: {}".format(
                     e
                 )
