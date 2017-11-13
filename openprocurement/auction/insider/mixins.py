@@ -436,6 +436,9 @@ class BestBidAuctionPhase(object):
                 " on {time}".format(**bid)
             )
             bid['dutch_winner'] = True
+            # Handle cancel of bid set previous bid from dutch phase
+            if bid['amount'] == -1:
+                bid['amount'] = self._bids_data[bid['bidder_id']][0]['amount']
             for lst in [
                 self._bids_data[bid['bidder_id']],
                 self.audit['timeline'][BESTBID]['bids']
