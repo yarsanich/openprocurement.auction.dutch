@@ -62,7 +62,6 @@ def post_results_data(auction, with_auctions_results=True):
     info = auction.get_auction_info()
     bids = info['data'].get("bids", [])
     if with_auctions_results:
-        result_bids = []
         for bid_info in bids:
             if bid_info.get('status', 'active') == 'active':
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
@@ -75,11 +74,10 @@ def post_results_data(auction, with_auctions_results=True):
                     except IndexError:
                         bid = ''
                     if bid:
-                        bid_info['value'] = generate_value(bid)
+                        if generate_value(bid) != None:
+                            bid_info['value'] = generate_value(bid)
                         bid_info['date'] = bid['time']
-                        if bid_info['value'] != None:
-                            result_bids.append(bid_info)
-    data = {'data': {'bids': result_bids}}
+    data = {'data': {'bids': bids}}
     LOGGER.info(
         "Approved data: {}".format(data),
         extra={"JOURNAL_REQUEST_ID": auction.request_id,
