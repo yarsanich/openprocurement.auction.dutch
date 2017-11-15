@@ -49,7 +49,6 @@ prepare_bids_stage = prepare_results_stage
 
 
 def post_results_data(auction, with_auctions_results=True):
-    """TODO: make me work"""
     def generate_value(bid_info):
         auction_bid = bid_info['amount'] if str(bid_info['amount']) != '-1'\
                 else None
@@ -63,6 +62,7 @@ def post_results_data(auction, with_auctions_results=True):
     info = auction.get_auction_info()
     bids = info['data'].get("bids", [])
     if with_auctions_results:
+        result_bids = []
         for bid_info in bids:
             if bid_info.get('status', 'active') == 'active':
                 bidder_id = bid_info.get('bidder_id', bid_info.get('id', ''))
@@ -77,7 +77,9 @@ def post_results_data(auction, with_auctions_results=True):
                     if bid:
                         bid_info['value'] = generate_value(bid)
                         bid_info['date'] = bid['time']
-    data = {'data': {'bids': bids}}
+                        if bid_info['value'] != None:
+                            result_bids.append(bid_info)
+    data = {'data': {'bids': result_bids}}
     LOGGER.info(
         "Approved data: {}".format(data),
         extra={"JOURNAL_REQUEST_ID": auction.request_id,
@@ -100,7 +102,6 @@ def post_results_data(auction, with_auctions_results=True):
 
 
 def announce_results_data(auction, results=None):
-    """TODO: make me work"""
     if not results:
         results = get_tender_data(
             auction.tender_url,
