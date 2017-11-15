@@ -49,13 +49,12 @@ prepare_bids_stage = prepare_results_stage
 
 
 def post_results_data(auction, with_auctions_results=True):
-    """TODO: make me work"""
     def generate_value(bid_info):
         auction_bid = bid_info['amount'] if str(bid_info['amount']) != '-1'\
                 else None
         value = auction.auction_document['value']
         return {
-            "amount": str(auction_bid),
+            "amount": auction_bid,
             "currency": value.get('currency'),
             "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
         }
@@ -75,7 +74,9 @@ def post_results_data(auction, with_auctions_results=True):
                     except IndexError:
                         bid = ''
                     if bid:
-                        bid_info['value'] = generate_value(bid)
+                        new_value = generate_value(bid)
+                        if new_value.get('amount', None) is not None:
+                            bid_info['value'] = new_value
                         bid_info['date'] = bid['time']
     data = {'data': {'bids': bids}}
     LOGGER.info(
@@ -100,7 +101,6 @@ def post_results_data(auction, with_auctions_results=True):
 
 
 def announce_results_data(auction, results=None):
-    """TODO: make me work"""
     if not results:
         results = get_tender_data(
             auction.tender_url,
