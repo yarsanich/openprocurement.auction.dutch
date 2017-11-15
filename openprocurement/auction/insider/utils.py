@@ -74,7 +74,7 @@ def post_results_data(auction, with_auctions_results=True):
                     except IndexError:
                         bid = ''
                     if bid:
-                        if generate_value(bid) != None:
+                        if generate_value(bid) is not None:
                             bid_info['value'] = generate_value(bid)
                         bid_info['date'] = bid['time']
     data = {'data': {'bids': bids}}
