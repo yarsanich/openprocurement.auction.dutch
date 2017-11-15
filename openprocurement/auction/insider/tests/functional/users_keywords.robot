@@ -25,19 +25,19 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     ${CURRENT_USER}=  set variable  ${user_id}
     Set Global Variable  ${CURRENT_USER}
 
-Зробити заявку
-    Highlight Elements With Text On Time  Зробити заявку
+Зробити ставку під час ducth частини
+    Highlight Elements With Text On Time  Зробити ставку
     Click Element  id=place-bid-button
     Wait Until Page Contains  Ви
 
 Зробити ставку
-    Поставити ставку  1  Заявку прийнято  ${dutch_amount}
+    Поставити ставку  1  Ставку прийнято  ${dutch_amount}
 
 Спробувати зробити надто низьку ставку
     Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${dutch_amount}
 
 Підвищити пропозицію переможцем голландської частини
-    Поставити ставку  1  Заявку прийнято  ${sealedbid_amount}
+    Поставити ставку  1  Ставку прийнято  ${sealedbid_amount}
 
 Спробувати зробити невалідну ставку переможцем голландської частини
     Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${bestbid_amount}
@@ -53,7 +53,7 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Input Text  id=bid-amount-input  ${input_amount}
     sleep  1s
     Capture Page Screenshot
-    Highlight Elements With Text On Time  Зробити заявку
+    Highlight Elements With Text On Time  Зробити ставку
     Click Element  id=place-bid-button
     Wait Until Page Contains  ${msg}  10s
     Capture Page Screenshot
@@ -66,12 +66,12 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Capture Page Screenshot
     Click Element  id=clear-bid-button
     Capture Page Screenshot
-    Поставити ставку  1  Заявку прийнято  ${dutch_amount}
+    Поставити ставку  1  Ставку прийнято  ${dutch_amount}
     Capture Page Screenshot
 
 Відмінити ставку
-    Highlight Elements With Text On Time  Відмінити заявку
+    Highlight Elements With Text On Time  Відмінити ставку
     Click Element  id=cancel-bid-button
-    Wait Until Page Contains  Заявку відмінено  10s
-    Highlight Elements With Text On Time  Заявку відмінено
+    Wait Until Page Contains  Ставку відмінено  10s
+    Highlight Elements With Text On Time  Ставку відмінено
     Capture Page Screenshot
