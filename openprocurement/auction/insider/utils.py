@@ -54,7 +54,7 @@ def post_results_data(auction, with_auctions_results=True):
                 else None
         value = auction.auction_document['value']
         return {
-            "amount": str(auction_bid),
+            "amount": auction_bid,
             "currency": value.get('currency'),
             "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
         }
@@ -74,8 +74,9 @@ def post_results_data(auction, with_auctions_results=True):
                     except IndexError:
                         bid = ''
                     if bid:
-                        if generate_value(bid) is not None:
-                            bid_info['value'] = generate_value(bid)
+                        new_value = generate_value(bid)
+                        if new_value.get('amount', None) is not None:
+                            bid_info['value'] = new_value
                         bid_info['date'] = bid['time']
     data = {'data': {'bids': bids}}
     LOGGER.info(
