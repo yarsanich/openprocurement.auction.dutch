@@ -54,7 +54,7 @@ def post_results_data(auction, with_auctions_results=True):
                 else None
         value = auction.auction_document['value']
         return {
-            "amount": auction_bid,
+            "amount": str(auction_bid),
             "currency": value.get('currency'),
             "valueAddedTaxIncluded": value.get('valueAddedTaxIncluded')
         }
