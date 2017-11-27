@@ -10,7 +10,9 @@ import wtforms_json
 
 from openprocurement.auction.utils import prepare_extra_journal_fields
 from openprocurement.auction.insider.constants import DUTCH, SEALEDBID, BESTBID
-from openprocurement.auction.insider.utils import lock_bids, get_dutch_winner
+from openprocurement.auction.insider.utils import (
+    lock_bids, get_dutch_winner, get_sealed_bid_winner
+)
 
 
 wtforms_json.init()
@@ -45,12 +47,20 @@ def validate_bid_value(form, field):
             raise e
     elif phase == BESTBID:
         # TODO: one percent step validation
-        winner = get_dutch_winner(form.document)
-        current_amount = winner.get('amount')
+        dutch_winner = get_dutch_winner(form.document)
+        current_amount = dutch_winner.get('amount')
         if not isinstance(current_amount, Decimal):
             current_amount = Decimal(str(current_amount))
         if field.data != Decimal('-1') and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
+            raise ValidationError(message)
+        sealed_bid_winner = get_sealed_bid_winner(form.document)
+        sealed_bid_amount = sealed_bid_winner.get('amount')
+        if not isinstance(sealed_bid_amount, Decimal):
+            sealed_bid_amount = Decimal(str(sealed_bid_amount))
+        if field.data != Decimal('-1') and (field.data <= sealed_bid_amount):
+            message = u'Bid value can\'t be less or equal' \
+                      u' to sealed bid winner amount'
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
