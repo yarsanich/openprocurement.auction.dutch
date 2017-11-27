@@ -266,7 +266,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bid': [u"Passed value doesn't match current amount=34650.00"]
+            u'bid': [u"Passed value doesn't match current amount=34650.0000"]
         }
     }
 
@@ -282,7 +282,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'failed',
         u'errors': {
-            u'bid': [u"Passed value doesn't match current amount=34300.00"]
+            u'bid': [u"Passed value doesn't match current amount=34300.0000"]
         }
     }
 

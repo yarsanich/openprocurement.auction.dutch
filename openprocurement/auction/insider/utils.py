@@ -127,13 +127,16 @@ def announce_results_data(auction, results=None):
 
 
 def calculate_next_amount(initial_value, current_value):
+    """
+    :param initial_value: start value from auction document
+    :param current_value: value from previous stage
+    :return: amount of next stage
+    """
     if not isinstance(current_value, Decimal):
         current_value = Decimal(str(current_value))
     if not isinstance(initial_value, Decimal):
         initial_value = Decimal(str(initial_value))
-    return (current_value - (initial_value * DUTCH_DOWN_STEP)).quantize(
-        Decimal('0.01'), rounding=ROUND_HALF_UP
-    )
+    return (current_value - (initial_value * DUTCH_DOWN_STEP)).quantize(Decimal('0.0000'), rounding=ROUND_HALF_UP)
 
 
 def prepare_timeline_stage():
