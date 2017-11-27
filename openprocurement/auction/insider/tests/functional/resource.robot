@@ -52,5 +52,8 @@ ${BROWSER}       phantomjs
     Wait Until Page Contains  Аукціон завершився  10 min
 
 Перевірити інформацію про тендер
-    Page Should Contain  ${TENDER['title']}                    # tender title
-    Page Should Contain  ${TENDER['procuringEntity']['name']}  # tender procuringEntity name
+  Page Should Contain  ${TENDER['title']}                    # tender title
+  Page Should Contain  ${TENDER['procuringEntity']['name']}  # tender procuringEntity name
+
+Відображення повідомлення для переможця голландської частини
+  Wait Until Page Contains  Щоб подати ставку, будь ласка, дочекайтесь етапу подання відкритих цінових пропозицій
