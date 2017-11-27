@@ -96,33 +96,6 @@ def test_add_bid(auction, logger, mocker):
     assert mock_bids_queue.empty.call_count == 8
     assert mock_end_sealedbid.is_set.call_count == 6
 
-    assert auction._bids_data == {
-        'test_bid_id': [
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': -1, 'time': 'test_time_value'}
-        ]
-    }
-
-    assert len(auction.audit['timeline'][SEALEDBID]['bids']) == 6
-
-    assert auction.audit['timeline'][SEALEDBID]['bids'] == [
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': -1, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'}
-    ]
-
-    assert mock_sleep.call_count == 6
-    assert mock_sleep.call_args_list[3][0] == (0.1,)
-    assert mock_sleep.call_args_list[4][0] == (0.1,)
-    assert mock_sleep.call_args_list[5][0] == (0.1,)
-
 
 def test_switch_to_sealedbid(auction, logger, mocker):
     mock_lock_bids = mocker.MagicMock()
