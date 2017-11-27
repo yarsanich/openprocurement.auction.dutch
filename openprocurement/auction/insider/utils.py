@@ -172,6 +172,10 @@ def get_dutch_winner(auction_document):
 
 
 def get_sealed_bid_winner(auction_document):
+    """
+    :param auction_document:
+    :return: sealedbid_winner bid info if it exists else empty dict
+    """
     try:
         return [bid for bid in auction_document['results']
                 if bid.get('sealedbid_winner', False)][0]

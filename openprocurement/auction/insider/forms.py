@@ -46,7 +46,6 @@ def validate_bid_value(form, field):
             form[field.name].errors.append(e.message)
             raise e
     elif phase == BESTBID:
-        # TODO: one percent step validation
         dutch_winner = get_dutch_winner(form.document)
         current_amount = dutch_winner.get('amount')
         if not isinstance(current_amount, Decimal):
@@ -54,8 +53,7 @@ def validate_bid_value(form, field):
         if field.data != Decimal('-1') and (field.data <= current_amount):
             message = u'Bid value can\'t be less or equal current amount'
             raise ValidationError(message)
-        sealed_bid_winner = get_sealed_bid_winner(form.document)
-        sealed_bid_amount = sealed_bid_winner.get('amount')
+        sealed_bid_amount = get_sealed_bid_winner(form.document).get('amount')
         if not isinstance(sealed_bid_amount, Decimal):
             sealed_bid_amount = Decimal(str(sealed_bid_amount))
         if field.data != Decimal('-1') and (field.data <= sealed_bid_amount):
