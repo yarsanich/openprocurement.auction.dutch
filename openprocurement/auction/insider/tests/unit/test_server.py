@@ -466,7 +466,8 @@ def test_server_postbid_and_form_handler(app):
         u'status': u'failed',
         u'errors': {
             u'bid': [
-                u"Bid value can't be less or equal to sealed bid winner amount"
+                u"The amount you suggest should not be less than the greatest"
+                u" bid made during the previous stage."
             ]
         }
     }

@@ -57,8 +57,8 @@ def validate_bid_value(form, field):
         if not isinstance(sealed_bid_amount, Decimal):
             sealed_bid_amount = Decimal(str(sealed_bid_amount))
         if field.data != Decimal('-1') and (field.data <= sealed_bid_amount):
-            message = u'Bid value can\'t be less or equal' \
-                      u' to sealed bid winner amount'
+            message = u'The amount you suggest should not be less than the' \
+                      u' greatest bid made during the previous stage.'
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
