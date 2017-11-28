@@ -370,11 +370,13 @@ class SealedBidAuctionPhase(object):
                         "Bid {bidder_id} marked for cancellation"
                         " on {time}".format(**bid)
                     )
-                for lst in [
-                    self._bids_data[bid['bidder_id']],
-                    self.audit['timeline'][SEALEDBID]['bids']
-                ]:
-                    lst.append(bid)
+                    if self._bids_data.get(bid['bidder_id'], False):
+                        del self._bids_data[bid['bidder_id']]
+                    self.audit['timeline'][SEALEDBID]['bids'] = \
+                        [Bid for Bid in self.audit['timeline'][SEALEDBID]['bids'] if bid['bidder_id'] != Bid['bidder_id']]
+                else:
+                    for lst in [self._bids_data[bid['bidder_id']], self.audit['timeline'][SEALEDBID]['bids']]:
+                        lst.append(bid)
             sleep(0.1)
         LOGGER.info("Bids queue done. Breaking worker")
 
