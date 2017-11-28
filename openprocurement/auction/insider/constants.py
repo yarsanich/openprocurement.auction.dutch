@@ -21,6 +21,8 @@ PREBESTBID = 'pre-bestbid'
 BESTBID = 'bestbid'
 END = 'announcement'
 
+PERCENT_FROM_INITIAL_VALUE = 100
+
 INVALIDATE_GRANT = timedelta(0, 230)
 
 DUTCH_TIMEDELTA = timedelta(minutes=405)
