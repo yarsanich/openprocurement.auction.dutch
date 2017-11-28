@@ -6,16 +6,23 @@ from decimal import Decimal, ROUND_HALF_UP
 from datetime import datetime, timedelta
 
 from dateutil.tz import tzlocal
-from openprocurement.auction.utils import get_latest_bid_for_bidder,\
-    make_request, get_tender_data, sorting_by_amount
-from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA,\
-    AUCTION_WORKER_API_AUCTION_CANCEL, AUCTION_WORKER_API_AUCTION_NOT_EXIST, AUCTION_WORKER_SERVICE_NUMBER_OF_BIDS
+from openprocurement.auction.utils import (
+    get_latest_bid_for_bidder,
+    make_request, get_tender_data,
+    sorting_by_amount
+)
+from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
 from openprocurement.auction.worker.utils import prepare_service_stage
-from openprocurement.auction.insider.constants import PRESTARTED, DUTCH,\
-    PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID, END
-from openprocurement.auction.insider.constants import MULTILINGUAL_FIELDS,\
-    ADDITIONAL_LANGUAGES, DUTCH_DOWN_STEP, SEALEDBID_TIMEDELTA,\
+from openprocurement.auction.insider.constants import (
+    DUTCH, PERCENT_FROM_INITIAL_VALUE,
+    PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID,
+    END
+)
+from openprocurement.auction.insider.constants import (
+    MULTILINGUAL_FIELDS,
+    ADDITIONAL_LANGUAGES, SEALEDBID_TIMEDELTA,
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
+)
 
 
 LOGGER = logging.getLogger("Auction Worker Insider")
@@ -124,19 +131,6 @@ def announce_results_data(auction, results=None):
                     }
                 })
     return bids_information
-
-
-def calculate_next_amount(initial_value, current_value):
-    """
-    :param initial_value: start value from auction document
-    :param current_value: value from previous stage
-    :return: amount of next stage
-    """
-    if not isinstance(current_value, Decimal):
-        current_value = Decimal(str(current_value))
-    if not isinstance(initial_value, Decimal):
-        initial_value = Decimal(str(initial_value))
-    return (current_value - (initial_value * DUTCH_DOWN_STEP)).quantize(Decimal('0.0000'), rounding=ROUND_HALF_UP)
 
 
 def prepare_timeline_stage():
@@ -285,10 +279,9 @@ def prepare_auction_document(auction, fast_forward=False):
                 'time': ''
             }
         auction.auction_document['stages'].append(stage)
-        amount = calculate_next_amount(
-            auction.auction_document['initial_value'],
-            amount
-        )
+        # Calculate next stage amount by getting decreasing percantage from initial_value
+        amount = (Decimal(str(auction.auction_document['initial_value'])) *
+                  Decimal(str((PERCENT_FROM_INITIAL_VALUE - (index + 1)) * 0.01))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
         if index != DUTCH_ROUNDS:
             next_stage_timedelta += dutch_step_duration
 
