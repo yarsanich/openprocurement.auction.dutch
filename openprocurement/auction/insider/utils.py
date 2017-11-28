@@ -174,6 +174,17 @@ def get_dutch_winner(auction_document):
         return {}
 
 
+def get_sealed_bid_winner(auction_document):
+    """
+    :param auction_document:
+    :return: sealedbid_winner bid info if it exists else empty dict
+    """
+    try:
+        return [bid for bid in auction_document['results']
+                if bid.get('sealedbid_winner', False)][0]
+    except IndexError:
+        return {}
+
 @contextmanager
 def update_auction_document(auction):
     yield auction.get_auction_document()

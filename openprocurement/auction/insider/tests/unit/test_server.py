@@ -426,6 +426,7 @@ def test_server_postbid_and_form_handler(app):
         'stages'][current_stage]
     app.application.config['auction'].switch_to_bestbid(stage)
 
+    data['bid'] = 34803
     with patch('openprocurement.auction.insider.server.session', s), \
             patch('openprocurement.auction.insider.forms.session', s):
         res = app.post('/postbid', data=json.dumps(data), headers=headers)
@@ -457,6 +458,24 @@ def test_server_postbid_and_form_handler(app):
     data['bid'] = 34701
     s['remote_oauth'] = (u'aMALGpjnB1iyBwXJM6betfgT4usHqw', '')
     with patch('openprocurement.auction.insider.server.session', s), \
+         patch('openprocurement.auction.insider.forms.session', s):
+        res = app.post('/postbid', data=json.dumps(data), headers=headers)
+    assert res.status == '200 OK'
+    assert res.status_code == 200
+    assert json.loads(res.data) == {
+        u'status': u'failed',
+        u'errors': {
+            u'bid': [
+                u"The amount you suggest should not be less than the greatest"
+                u" bid made during the previous stage."
+            ]
+        }
+    }
+
+    data['bidder_id'] = dutch_bidder_id
+    data['bid'] = 34803
+    s['remote_oauth'] = (u'aMALGpjnB1iyBwXJM6betfgT4usHqw', '')
+    with patch('openprocurement.auction.insider.server.session', s), \
             patch('openprocurement.auction.insider.forms.session', s):
         res = app.post('/postbid', data=json.dumps(data), headers=headers)
     assert res.status == '200 OK'
@@ -464,7 +483,7 @@ def test_server_postbid_and_form_handler(app):
     assert json.loads(res.data) == {
         u'status': u'ok',
         u'data': {
-            u'bid': 34701,
+            u'bid': 34803,
             u'bidder_id': u'f7c8cd1d56624477af8dc3aa9c4b3ea3'
         }
     }

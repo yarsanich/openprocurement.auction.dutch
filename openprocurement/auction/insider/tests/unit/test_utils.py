@@ -16,7 +16,7 @@ from openprocurement.auction.insider.utils import (
     prepare_results_stage, calculate_next_amount,
     prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
-    lock_bids, update_stage, prepare_auction_document
+    lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner
 )
 
 
@@ -131,6 +131,30 @@ def test_get_dutch_winner():
     assert result == {'bidder_id': '2', 'dutch_winner': True}
 
     result = get_dutch_winner({'results': []})
+    assert result == {}
+
+
+def test_get_sealed_bid_winner():
+    auction_document = {
+        'results': [
+            {
+                'bidder_id': '1'
+            },
+            {
+                'bidder_id': '2',
+                'sealedbid_winner': True
+            },
+            {
+                'bidder_id': '3',
+                'sealedbid_winner': True
+            },
+        ]
+    }
+
+    result = get_sealed_bid_winner(auction_document)
+    assert result == {'bidder_id': '2', 'sealedbid_winner': True}
+
+    result = get_sealed_bid_winner({'results': []})
     assert result == {}
 
 
