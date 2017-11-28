@@ -85,7 +85,6 @@ class Auction(DutchDBServiceMixin,
         self.worker_defaults = worker_defaults
         if self.worker_defaults.get('with_document_service', False):
             self.session_ds = RequestsSession()
-        self._bids_data = {}
         self.db = Database(str(self.worker_defaults["COUCH_DATABASE"]),
                            session=Session(retry_delays=range(10)))
         self.audit = {}

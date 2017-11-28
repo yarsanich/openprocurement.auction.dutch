@@ -99,10 +99,8 @@ def test_add_bid(auction, logger, mocker):
         ]
     }
 
-    assert len(auction.audit['timeline'][SEALEDBID]['bids']) == 6
+    assert len(auction.audit['timeline'][SEALEDBID]['bids']) == 2
     assert auction.audit['timeline'][SEALEDBID]['bids'] == [
-        {'amount': 440000.0, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
-        {'amount': 440050.0, 'bidder_id': 'test_bid_id_2', 'time': 'test_time_value'},
         {'amount': 438000.0, 'bidder_id': 'test_bid_id_3', 'time': 'test_time_value'},
         {'amount': 450000.0, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
     ]
