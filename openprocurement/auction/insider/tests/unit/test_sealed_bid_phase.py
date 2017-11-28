@@ -12,16 +12,48 @@ def test_add_bid(auction, logger, mocker):
     auction._end_sealedbid = Event()
 
     mock_bids_queue = mocker.patch.object(auction, 'bids_queue', autospec=True)
-    mock_end_sealedbid = mocker.patch.object(auction, '_end_sealedbid', autospec=True)
+    mock_end_sealedbid = mocker.patch.object(
+        auction, '_end_sealedbid', autospec=True
+    )
 
-    mock_bids_queue.empty.side_effect = (_ for _ in range(4))
-    mock_end_sealedbid.is_set.side_effect = [False, False, True]
+    mock_bids_queue.empty.side_effect = (_ for _ in range(7))
+    mock_end_sealedbid.is_set.side_effect = [
+        False, False, False, False, False, True
+    ]
 
-    mock_bids_queue.get.return_value = {  # TODO: change to side_effect!!!!
-        'bidder_id': 'test_bid_id',
-        'amount': 440000.0,
-        'time': 'test_time_value'
-    }
+    mock_bids_queue.get.side_effect = [
+        {
+            'bidder_id': 'test_bid_id',
+            'amount': 440000.0,
+            'time': 'test_time_value'
+        },
+        {
+            'bidder_id': 'test_bid_id_2',
+            'amount': 440050.0,
+            'time': 'test_time_value'
+        },
+        {
+            'bidder_id': 'test_bid_id',
+            'amount': -1,
+            'time': 'test_time_value'
+        },
+        {
+            'bidder_id': 'test_bid_id_3',
+            'amount': 438000.0,
+            'time': 'test_time_value'
+        },
+        {
+            'bidder_id': 'test_bid_id',
+            'amount': 450000.0,
+            'time': 'test_time_value'
+        },
+        {
+            'bidder_id': 'test_bid_id_2',
+            'amount': -1,
+            'time': 'test_time_value'
+        },
+
+    ]
 
     auction.audit = {
         'timeline':
@@ -39,63 +71,46 @@ def test_add_bid(auction, logger, mocker):
     auction.add_bid()
     log_strings = logger.log_capture_string.getvalue().split('\n')
 
-    """
-        ['Started bids worker',
-         'Adding bid test_bid_id with value 440000.0 on test_time_value',
-         'Adding bid test_bid_id with value 440000.0 on test_time_value',
-         'Adding bid test_bid_id with value 440000.0 on test_time_value',
-         'Bids queue done. Breaking worker',
-         '']
-    """
-
     assert log_strings[0] == 'Started bids worker'
-    assert mock_bids_queue.get.call_count == 3
-    assert log_strings[1:4] == [
+    assert mock_bids_queue.get.call_count == 6
+    assert log_strings[1:-2] == [
         'Adding bid test_bid_id with value 440000.0 on test_time_value',
-        'Adding bid test_bid_id with value 440000.0 on test_time_value',
-        'Adding bid test_bid_id with value 440000.0 on test_time_value'
-    ]
-    assert mock_bids_queue.empty.call_count == 4
-    assert mock_end_sealedbid.is_set.call_count == 3
-    assert auction._bids_data == {
-        'test_bid_id': [
-            {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'},
-            {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'}
-        ]
-    }
-    assert len(auction.audit['timeline'][SEALEDBID]['bids']) == 3
-    assert auction.audit['timeline'][SEALEDBID]['bids'] == [
-        {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'},
-        {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'},
-        {'bidder_id': 'test_bid_id', 'amount': 440000.0, 'time': 'test_time_value'}
-    ]
-
-    assert mock_sleep.call_count == 3
-    assert mock_sleep.call_args_list[0][0] == (0.1,)
-    assert mock_sleep.call_args_list[1][0] == (0.1,)
-    assert mock_sleep.call_args_list[2][0] == (0.1,)
-    assert log_strings[-2] == "Bids queue done. Breaking worker"
-
-    mock_bids_queue.get.return_value['amount'] = -1
-    mock_bids_queue.empty.side_effect = (_ for _ in range(4))
-    mock_end_sealedbid.is_set.side_effect = [False, False, True]
-    auction.add_bid()
-    log_strings = logger.log_capture_string.getvalue().split('\n')
-
-    assert log_strings[-9:-1] == [
-        'Started bids worker',
+        'Adding bid test_bid_id_2 with value 440050.0 on test_time_value',
         'Adding bid test_bid_id with value -1 on test_time_value',
         'Bid test_bid_id marked for cancellation on test_time_value',
-        'Adding bid test_bid_id with value -1 on test_time_value',
-        'Bid test_bid_id marked for cancellation on test_time_value',
-        'Adding bid test_bid_id with value -1 on test_time_value',
-        'Bid test_bid_id marked for cancellation on test_time_value',
-        'Bids queue done. Breaking worker'
+        'Adding bid test_bid_id_3 with value 438000.0 on test_time_value',
+        'Adding bid test_bid_id with value 450000.0 on test_time_value',
+        'Adding bid test_bid_id_2 with value -1 on test_time_value',
+        'Bid test_bid_id_2 marked for cancellation on test_time_value',
     ]
-    assert mock_bids_queue.empty.call_count == 8
+    assert mock_bids_queue.empty.call_count == 7
     assert mock_end_sealedbid.is_set.call_count == 6
 
+    assert auction._bids_data == {
+        'test_bid_id': [
+            {'amount': 450000.0,
+             'bidder_id': 'test_bid_id',
+             'time': 'test_time_value'}
+        ],
+        'test_bid_id_3': [
+            {'amount': 438000.0,
+             'bidder_id': 'test_bid_id_3',
+             'time': 'test_time_value'}
+        ]
+    }
+
+    assert len(auction.audit['timeline'][SEALEDBID]['bids']) == 6
+    assert auction.audit['timeline'][SEALEDBID]['bids'] == [
+        {'amount': 440000.0, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
+        {'amount': 440050.0, 'bidder_id': 'test_bid_id_2', 'time': 'test_time_value'},
+        {'amount': 438000.0, 'bidder_id': 'test_bid_id_3', 'time': 'test_time_value'},
+        {'amount': 450000.0, 'bidder_id': 'test_bid_id', 'time': 'test_time_value'},
+    ]
+
+    assert mock_sleep.call_count == 6
+    for i in range(6):
+        assert mock_sleep.call_args_list[i][0] == (0.1,)
+    assert log_strings[-2] == "Bids queue done. Breaking worker"
 
 def test_switch_to_sealedbid(auction, logger, mocker):
     mock_lock_bids = mocker.MagicMock()

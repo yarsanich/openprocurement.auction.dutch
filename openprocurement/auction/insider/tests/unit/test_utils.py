@@ -16,7 +16,7 @@ from openprocurement.auction.insider.utils import (
     prepare_results_stage, calculate_next_amount,
     prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
-    lock_bids, update_stage, prepare_auction_document
+    lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner
 )
 
 
@@ -63,9 +63,10 @@ def test_prepare_results_stage(bidder_id,
 @pytest.mark.parametrize(
     'initial_value, current_value, expected',
     [
-        ('500000', 480700, Decimal('475700.00')),
-        (Decimal('20000'), '13655', Decimal('13455.00')),
-        (26000, Decimal('26000'), Decimal('25740.00')),
+        ('16795.45', 16795.45, Decimal('16627.4955')),
+        (Decimal('100789.19'), '100789.19', Decimal('99781.2981')),
+        (78901567.09, Decimal('78901567.09'), Decimal('78112551.4191')),
+        (8914.60, Decimal('8914.60'), Decimal('8825.4540')),
     ]
 )
 def test_calculate_next_amount(initial_value, current_value, expected):
@@ -130,6 +131,30 @@ def test_get_dutch_winner():
     assert result == {'bidder_id': '2', 'dutch_winner': True}
 
     result = get_dutch_winner({'results': []})
+    assert result == {}
+
+
+def test_get_sealed_bid_winner():
+    auction_document = {
+        'results': [
+            {
+                'bidder_id': '1'
+            },
+            {
+                'bidder_id': '2',
+                'sealedbid_winner': True
+            },
+            {
+                'bidder_id': '3',
+                'sealedbid_winner': True
+            },
+        ]
+    }
+
+    result = get_sealed_bid_winner(auction_document)
+    assert result == {'bidder_id': '2', 'sealedbid_winner': True}
+
+    result = get_sealed_bid_winner({'results': []})
     assert result == {}
 
 
