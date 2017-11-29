@@ -13,8 +13,7 @@ from openprocurement.auction.insider.constants import (
 )
 from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
-    prepare_results_stage, calculate_next_amount,
-    prepare_timeline_stage, prepare_audit, get_dutch_winner,
+    prepare_results_stage, prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
     lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner
 )
@@ -57,20 +56,6 @@ def test_prepare_results_stage(bidder_id,
         }}
     )
     result = prepare_results_stage(bidder_id, bidder_name, amount, time, dutch_winner, sealedbid_winner)
-    assert result == expected
-
-
-@pytest.mark.parametrize(
-    'initial_value, current_value, expected',
-    [
-        ('16795.45', 16795.45, Decimal('16627.4955')),
-        (Decimal('100789.19'), '100789.19', Decimal('99781.2981')),
-        (78901567.09, Decimal('78901567.09'), Decimal('78112551.4191')),
-        (8914.60, Decimal('8914.60'), Decimal('8825.4540')),
-    ]
-)
-def test_calculate_next_amount(initial_value, current_value, expected):
-    result = calculate_next_amount(initial_value, current_value)
     assert result == expected
 
 
