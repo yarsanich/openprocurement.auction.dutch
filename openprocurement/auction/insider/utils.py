@@ -218,6 +218,12 @@ def prepare_auction_data(data):
     }
 
 
+def calculate_next_stage_amount(auction, index):
+    return (Decimal(str(auction.auction_document['initial_value'])) *
+            Decimal(str((PERCENT_FROM_INITIAL_VALUE - (index + 1)) * 0.01))).quantize(Decimal('0.01'),
+                                                                                      rounding=ROUND_HALF_UP)
+
+
 def prepare_auction_document(auction, fast_forward=False):
     auction.auction_document.update({
         "_id": auction.auction_doc_id,
@@ -279,9 +285,10 @@ def prepare_auction_document(auction, fast_forward=False):
                 'time': ''
             }
         auction.auction_document['stages'].append(stage)
-        # Calculate next stage amount by getting decreasing percantage from initial_value
-        amount = (Decimal(str(auction.auction_document['initial_value'])) *
-                  Decimal(str((PERCENT_FROM_INITIAL_VALUE - (index + 1)) * 0.01))).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+        # Calculate next stage amount by getting decreasing percentage from initial_value
+        amount = calculate_next_stage_amount(auction, index)
+
         if index != DUTCH_ROUNDS:
             next_stage_timedelta += dutch_step_duration
 

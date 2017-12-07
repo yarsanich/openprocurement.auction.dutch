@@ -9,10 +9,10 @@ from pytz import timezone
 import wtforms_json
 
 from openprocurement.auction.utils import prepare_extra_journal_fields
-from openprocurement.auction.insider.constants import DUTCH, SEALEDBID, BESTBID
+from openprocurement.auction.insider.constants import DUTCH, SEALEDBID, BESTBID, PERCENT_FROM_INITIAL_VALUE
 from openprocurement.auction.insider.utils import (
-    lock_bids, get_dutch_winner, get_sealed_bid_winner
-)
+    lock_bids, get_dutch_winner, get_sealed_bid_winner,
+    calculate_next_stage_amount)
 
 
 wtforms_json.init()
@@ -56,7 +56,9 @@ def validate_bid_value(form, field):
         sealed_bid_amount = get_sealed_bid_winner(form.document).get('amount')
         if not isinstance(sealed_bid_amount, Decimal):
             sealed_bid_amount = Decimal(str(sealed_bid_amount))
-        if field.data != Decimal('-1') and (field.data <= sealed_bid_amount):
+        minimal_best_bid_amount = sealed_bid_amount + calculate_next_stage_amount(form.auction,
+                                                                                  PERCENT_FROM_INITIAL_VALUE - 2)
+        if field.data != Decimal('-1') and (field.data < minimal_best_bid_amount):
             message = u'The amount you suggest should not be less than the' \
                       u' greatest bid made during the previous stage.'
             raise ValidationError(message)
