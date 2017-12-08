@@ -56,8 +56,9 @@ def validate_bid_value(form, field):
         sealed_bid_amount = get_sealed_bid_winner(form.document).get('amount')
         if not isinstance(sealed_bid_amount, Decimal):
             sealed_bid_amount = Decimal(str(sealed_bid_amount))
-        minimal_best_bid_amount = sealed_bid_amount + calculate_next_stage_amount(form.auction,
-                                                                                  PERCENT_FROM_INITIAL_VALUE - 2)
+        # calculate_next_stage_amount returns amount equal to one lowering step from dutch phase
+        lowering_step_amount = calculate_next_stage_amount(form.auction, PERCENT_FROM_INITIAL_VALUE - 2)
+        minimal_best_bid_amount = sealed_bid_amount + lowering_step_amount
         if field.data != Decimal('-1') and (field.data < minimal_best_bid_amount):
             message = u'The amount you suggest should not be less than the' \
                       u' greatest bid made during the previous stage.'
