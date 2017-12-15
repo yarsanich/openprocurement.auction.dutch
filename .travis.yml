@@ -16,7 +16,7 @@ cache:
   directories:
     - eggs
 before_install:
-  - pip install setuptools==36.5.0 python-coveralls
+  - pip install setuptools==38.2.4 python-coveralls
   - python2 bootstrap.py
   - mv openprocurement/auction/insider/tests/data/auction_worker_travis.yaml openprocurement/auction/insider/tests/data/auction_worker_insider.yaml
 install:
