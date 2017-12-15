@@ -39,6 +39,9 @@ def prepare_users_data(tender_data):
 def convert_amount_to_number(amount_string):
     return float(amount_string.replace(' ', '').replace(',', '.').replace("'",''))
 
+def calculate_step_amount(tender_data):
+    initial_value = tender_data["value"]["amount"]
+    return initial_value*0.01
 
 def Highlight_Element(locator):
     seleniumlib = BuiltIn().get_library_instance('Selenium2Library')

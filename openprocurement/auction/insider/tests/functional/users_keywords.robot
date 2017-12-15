@@ -1,7 +1,6 @@
 *** Variables ***
 ${dutch_amount}  xpath=(//div[@id='stage-sealedbid-dutch-winner']//span[@class='label-price ng-binding'])
 ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' '), ' sealedbid-winner ')]//span[@class='label-price ng-binding'])
-${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' '), ' dutch-winner ')]//span[@class='label-price ng-binding'])
 
 *** Keywords ***
 Підготувати клієнт для ${user_index} користувача
@@ -37,10 +36,13 @@ ${bestbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), ' 
     Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${dutch_amount}
 
 Підвищити пропозицію переможцем голландської частини
-    Поставити ставку  1  Ставку прийнято  ${sealedbid_amount}
+    Поставити ставку  ${step_amount}  Ставку прийнято  ${sealedbid_amount}
 
 Спробувати зробити невалідну ставку переможцем голландської частини
-    Поставити ставку  -1  Значення пропозиції не може бути меншою чи рівною поточній сумі  ${bestbid_amount}
+    ${step_amount}=  calculate_step_amount  ${TENDER}
+    Set Global Variable  ${step_amount}
+    ${invalid_amount}=  Evaluate  ${step_amount}-1
+    Поставити ставку  ${invalid_amount}  Ваша ставка повинна перевищувати ставку переможця етапу закритих цінових пропозицій  ${sealedbid_amount}
 
 Поставити ставку
     [Arguments]  ${step}  ${msg}  ${locator}
