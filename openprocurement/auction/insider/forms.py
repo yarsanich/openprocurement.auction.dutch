@@ -60,8 +60,8 @@ def validate_bid_value(form, field):
         lowering_step_amount = calculate_next_stage_amount(form.auction, PERCENT_FROM_INITIAL_VALUE - 2)
         minimal_best_bid_amount = sealed_bid_amount + lowering_step_amount
         if field.data != Decimal('-1') and (field.data < minimal_best_bid_amount):
-            message = u'The amount you suggest should not be less than the' \
-                      u' greatest bid made during the previous stage.'
+            message = u'Your bid should be greater than the one made by the sealed' \
+                      u' bid winner at least for one step (1% of the primary lot value).'
             raise ValidationError(message)
         return True
     elif phase == SEALEDBID:
