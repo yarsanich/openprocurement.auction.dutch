@@ -1,224 +1,378 @@
 {
-  "data": {
-    "auctionID": "UA-11111",
-    "description": "Tender Description",
-    "title": "Tender Title",
-    "procurementMethodType": "dgfInsider",
-    "minimalStep": {
-      "currency": "UAH",
-      "amount": 35000.0,
-      "valueAddedTaxIncluded": true
-    },
-    "auctionPeriod": {
-      "startDate": "2016-12-26T15:50:14.003746+02:00",
-      "endDate": null
-    },
-    "bids": [
-      {
-        "date": "2014-11-19T08:22:21.726234+00:00",
-        "id": "e4456d02263441ffb3f00ceafa661bb2",
-	"tenderers": [
-	      {
-		  "contactPoint": {
-		      "telephone": "+380139815286",
-		      "name": "Эммануил Капустина",
-		      "email": "automation+4077486456@smartweb.com.ua"
-		  },
-		  "identifier": {
-		      "scheme": "UA-EDR",
-		      "id": "46171",
-		      "uri": "http://9665642342.promtest.ua",
-		      "legalName": "Фомин-Александрова"
-		  },
-		  "name": "МФ ДП \"АМПУ\" (адміністрація Миколаївського МП)",
-		  "address": {
-		      "postalCode": "849999",
-		      "countryName": "Україна",
-		      "streetAddress": "6973 Афанасьева Mountain Apt. 965",
-		      "region": "Донецька область",
-		      "locality": "Donetsk"
-		  }
-	      }
-	  ]
-      },
-      {
-        "date": "2014-11-19T08:22:24.038426+00:00",
-        "id": "e4456d02263441ffb2f00ceafa661bb2",
-        "tenderers": [
-	      {
-		  "contactPoint": {
-		      "telephone": "+380139815286",
-		      "name": "Эммануил Капустина",
-		      "email": "automation+4077486456@smartweb.com.ua"
-		  },
-		  "identifier": {
-		      "scheme": "UA-EDR",
-		      "id": "46171",
-		      "uri": "http://9665642342.promtest.ua",
-		      "legalName": "Фомин-Александрова"
-		  },
-		  "name": "ПрАО \"МТС Україна\"",
-		  "address": {
-		      "postalCode": "849999",
-		      "countryName": "Україна",
-		      "streetAddress": "6973 Афанасьева Mountain Apt. 965",
-		      "region": "Донецька область",
-		      "locality": "Donetsk"
-		  }
-	      }
-	  ]
-      },
-      {
-        "date": "2014-11-19T08:22:24.038426+00:00",
-        "id": "e4456d02263441ffb2f00ceafa771bb2",
-         "tenderers": [
-        {
-      "contactPoint": {
-          "telephone": "+380139815286",
-          "name": "Эммануил Капустина",
-          "email": "automation+4077486456@smartweb.com.ua"
-      },
-      "identifier": {
-          "scheme": "UA-EDR",
-          "id": "46171",
-          "uri": "http://9665642342.promtest.ua",
-          "legalName": "Фомин-Александрова"
-      },
-      "name": "ПрАТ \"КИЇВСТАР\"",
-      "address": {
-          "postalCode": "849999",
-          "countryName": "Україна",
-          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
-          "region": "Донецька область",
-          "locality": "Donetsk"
-      }
-        }
-    ]
-      },
-      {
-        "date": "2014-11-19T08:22:24.038426+00:00",
-        "id": "a96a4681a1ef4b9fba6b598bd1d39406",
-          "value": {
-              "currency": null,
-              "amount": 0,
-              "valueAddedTaxIncluded": true
-          },
-    "tenderers": [
-        {
-      "contactPoint": {
-          "telephone": "+380139815286",
-          "name": "Эммануил Капустина",
-          "email": "automation+4077486456@smartweb.com.ua"
-      },
-      "identifier": {
-          "scheme": "UA-EDR",
-          "id": "46171",
-          "uri": "http://9665642342.promtest.ua",
-          "legalName": "Фомин-Александрова"
-      },
-      "name": "ТОВ \"ЛАЙФСЕЛЛ\"",
-      "address": {
-          "postalCode": "849999",
-          "countryName": "Україна",
-          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
-          "region": "Донецька область",
-          "locality": "Donetsk"
-      }
-        }
-    ]
-      },
-      {
-        "date": "2014-11-19T08:22:24.038426+00:00",
-        "id": "c26d9eed99624c338ce0fca58a0aac32",
-          "value": {
-              "currency": null,
-              "amount": 0,
-              "valueAddedTaxIncluded": true
-          },
-    "tenderers": [
-        {
-      "contactPoint": {
-          "telephone": "+380139815286",
-          "name": "Эммануил Капустина",
-          "email": "automation+4077486456@smartweb.com.ua"
-      },
-      "identifier": {
-          "scheme": "UA-EDR",
-          "id": "46171",
-          "uri": "http://9665642342.promtest.ua",
-          "legalName": "Фомин-Александрова"
-      },
-      "name": "КОМУНАЛЬНЕ ПІДПРИЄМСТВО 'КИЇВПАСТРАНС'",
-      "address": {
-          "postalCode": "849999",
-          "countryName": "Україна",
-          "streetAddress": "6973 Афанасьева Mountain Apt. 965",
-          "region": "Донецька область",
-          "locality": "Donetsk"
-      }
-        }
-    ]
-      }
-    ],
-      "procuringEntity": {
-	  "identifier": {
-              "scheme": "https://ns.openprocurement.org/ua/edrpou",
-              "id": "21725150",
-              "uri": "http://sch10.edu.vn.ua/",
-              "legalName": "\u0417\u0430\u043a\u043b\u0430\u0434 \"\u0417\u0430\u0433\u0430\u043b\u044c\u043d\u043e\u043e\u0441\u0432\u0456\u0442\u043d\u044f \u0448\u043a\u043e\u043b\u0430 \u0406-\u0406\u0406\u0406 \u0441\u0442\u0443\u043f\u0435\u043d\u0456\u0432 \u2116 10 \u0412\u0456\u043d\u043d\u0438\u0446\u044c\u043a\u043e\u0457 \u043c\u0456\u0441\u044c\u043a\u043e\u0457 \u0440\u0430\u0434\u0438\""
-      },
-      "name": "\u0417\u041e\u0421\u0428 #10 \u043c.\u0412\u0456\u043d\u043d\u0438\u0446\u0456",
-      "address": {
-        "postalCode": "21027",
-        "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
-        "streetAddress": "\u0432\u0443\u043b. \u0421\u0442\u0430\u0445\u0443\u0440\u0441\u044c\u043a\u043e\u0433\u043e. 22",
-        "region": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f",
-        "locality": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f"
-      }
-    },
-    "items": [
-      {
-        "unit": {
-          "name": "item"
+    "data": {
+        "auctionID": "UA-11111",
+        "auctionPeriod": {
+            "endDate": null,
+            "startDate": "2016-12-26T15:50:14.003746+02:00"
         },
-        "additionalClassifications": [
-          {
-            "scheme": "\u0414\u041a\u041f\u041f",
-            "id": "55.51.10.300",
-            "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c"
-          }
+        "bids": [
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "93b5e1de62734362b09abfead33a7c60",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "b663ca42ff3d4289a0251a1cb42ff818",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "96f24413a30f4d1293648a20dda3bfbf",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "7b901700aa724529b3776822a3ab8228",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "87a5985673a442c78da1dc10f86ef49b",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "6de86b7e428a442e99a703ddf7873206",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "65edbc20b99d481ebaadde725a591a99",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "dd1bc11306614c7d8ca673e67d67a637",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "d22b900f83074a3f9d1c322d828f6c1a",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "a210879588314be6a5e7eba22fc5b704",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            },
+            {
+                "date": "2014-11-19T08:22:21.726234+00:00",
+                "id": "e4456d02263441ffb3f00ceafa661bb2",
+                "tenderers": [
+                    {
+                        "address": {
+                            "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                            "locality": "Donetsk",
+                            "postalCode": "849999",
+                            "region": "\u0414\u043e\u043d\u0435\u0446\u044c\u043a\u0430 \u043e\u0431\u043b\u0430\u0441\u0442\u044c",
+                            "streetAddress": "6973 \u0410\u0444\u0430\u043d\u0430\u0441\u044c\u0435\u0432\u0430 Mountain Apt. 965"
+                        },
+                        "contactPoint": {
+                            "email": "automation+4077486456@smartweb.com.ua",
+                            "name": "\u042d\u043c\u043c\u0430\u043d\u0443\u0438\u043b \u041a\u0430\u043f\u0443\u0441\u0442\u0438\u043d\u0430",
+                            "telephone": "+380139815286"
+                        },
+                        "identifier": {
+                            "id": "46171",
+                            "legalName": "\u0424\u043e\u043c\u0438\u043d-\u0410\u043b\u0435\u043a\u0441\u0430\u043d\u0434\u0440\u043e\u0432\u0430",
+                            "scheme": "UA-EDR",
+                            "uri": "http://9665642342.promtest.ua"
+                        },
+                        "name": "\u041c\u0424 \u0414\u041f \"\u0410\u041c\u041f\u0423\" (\u0430\u0434\u043c\u0456\u043d\u0456\u0441\u0442\u0440\u0430\u0446\u0456\u044f \u041c\u0438\u043a\u043e\u043b\u0430\u0457\u0432\u0441\u044c\u043a\u043e\u0433\u043e \u041c\u041f)"
+                    }
+                ]
+            }
         ],
-        "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c",
-        "classification": {
-          "scheme": "CPV",
-          "id": "55523100-3",
-          "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0437 \u0445\u0430\u0440\u0447\u0443\u0432\u0430\u043d\u043d\u044f \u0443 \u0448\u043a\u043e\u043b\u0430\u0445"
+        "dateModified": "2014-11-19T08:22:24.866669+00:00",
+        "description": "Tender Description",
+        "items": [
+            {
+                "additionalClassifications": [
+                    {
+                        "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c",
+                        "id": "55.51.10.300",
+                        "scheme": "\u0414\u041a\u041f\u041f"
+                    }
+                ],
+                "classification": {
+                    "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0437 \u0445\u0430\u0440\u0447\u0443\u0432\u0430\u043d\u043d\u044f \u0443 \u0448\u043a\u043e\u043b\u0430\u0445",
+                    "id": "55523100-3",
+                    "scheme": "CPV"
+                },
+                "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c",
+                "quantity": 5,
+                "unit": {
+                    "name": "item"
+                }
+            },
+            {
+                "additionalClassifications": [
+                    {
+                        "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c",
+                        "id": "55.51.10.300",
+                        "scheme": "\u0414\u041a\u041f\u041f"
+                    }
+                ],
+                "classification": {
+                    "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0437 \u0445\u0430\u0440\u0447\u0443\u0432\u0430\u043d\u043d\u044f \u0443 \u0448\u043a\u043e\u043b\u0430\u0445",
+                    "id": "55523100-3",
+                    "scheme": "CPV"
+                },
+                "description": "\u041f\u043e\u0441\u043b\u0443\u0433\u0438 \u0448\u043a\u0456\u043b\u044c\u043d\u0438\u0445 \u0457\u0434\u0430\u043b\u0435\u043d\u044c",
+                "quantity": 5,
+                "unit": {
+                    "name": "item"
+                }
+            }
+        ],
+        "minimalStep": {
+            "amount": 35000.0,
+            "currency": "UAH",
+            "valueAddedTaxIncluded": true
         },
-        "quantity": 5
-      }
-    ],
-    "dateModified": "2014-11-19T08:22:24.866669+00:00",
-    "id": "11111111111111111111111111111111",
-    "procuringEntity": {
-      "identifier": {
-        "scheme": "https://ns.openprocurement.org/ua/edrpou",
-        "id": "21725150",
-        "uri": "http://sch10.edu.vn.ua/",
-        "legalName": "\u0417\u0430\u043a\u043b\u0430\u0434 \"\u0417\u0430\u0433\u0430\u043b\u044c\u043d\u043e\u043e\u0441\u0432\u0456\u0442\u043d\u044f \u0448\u043a\u043e\u043b\u0430 \u0406-\u0406\u0406\u0406 \u0441\u0442\u0443\u043f\u0435\u043d\u0456\u0432 \u2116 10 \u0412\u0456\u043d\u043d\u0438\u0446\u044c\u043a\u043e\u0457 \u043c\u0456\u0441\u044c\u043a\u043e\u0457 \u0440\u0430\u0434\u0438\""
-      },
-      "name": "\u0417\u041e\u0421\u0428 #10 \u043c.\u0412\u0456\u043d\u043d\u0438\u0446\u0456",
-      "address": {
-        "postalCode": "21027",
-        "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
-        "streetAddress": "\u0432\u0443\u043b. \u0421\u0442\u0430\u0445\u0443\u0440\u0441\u044c\u043a\u043e\u0433\u043e. 22",
-        "region": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f",
-        "locality": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f"
-      }
-    },
-    "value":{
-      "amount": 35000,
-      "valueAddedTaxIncluded": false,
-      "currency": "UAH"
+        "procurementMethodType": "dgfInsider",
+        "procuringEntity": {
+            "address": {
+                "countryName": "\u0423\u043a\u0440\u0430\u0457\u043d\u0430",
+                "locality": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f",
+                "postalCode": "21027",
+                "region": "\u043c. \u0412\u0456\u043d\u043d\u0438\u0446\u044f",
+                "streetAddress": "\u0432\u0443\u043b. \u0421\u0442\u0430\u0445\u0443\u0440\u0441\u044c\u043a\u043e\u0433\u043e. 22"
+            },
+            "identifier": {
+                "id": "21725150",
+                "legalName": "\u0417\u0430\u043a\u043b\u0430\u0434 \"\u0417\u0430\u0433\u0430\u043b\u044c\u043d\u043e\u043e\u0441\u0432\u0456\u0442\u043d\u044f \u0448\u043a\u043e\u043b\u0430 \u0406-\u0406\u0406\u0406 \u0441\u0442\u0443\u043f\u0435\u043d\u0456\u0432 \u2116 10 \u0412\u0456\u043d\u043d\u0438\u0446\u044c\u043a\u043e\u0457 \u043c\u0456\u0441\u044c\u043a\u043e\u0457 \u0440\u0430\u0434\u0438\"",
+                "scheme": "https://ns.openprocurement.org/ua/edrpou",
+                "uri": "http://sch10.edu.vn.ua/"
+            },
+            "name": "\u0417\u041e\u0421\u0428 #10 \u043c.\u0412\u0456\u043d\u043d\u0438\u0446\u0456"
+        },
+        "title": "Tender Title",
+        "value": {
+            "amount": 35000,
+            "currency": "UAH",
+            "valueAddedTaxIncluded": false
+        }
     }
-  }
 }
