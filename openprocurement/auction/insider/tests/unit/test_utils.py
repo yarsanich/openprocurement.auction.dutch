@@ -15,7 +15,8 @@ from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
     prepare_results_stage, prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
-    lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner
+    lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner,
+    update_auction_status
 )
 
 
@@ -728,3 +729,15 @@ def test_prepare_auction_document(auction, mocker, logger):
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
+
+
+def test_update_auction_status(auction, mocker, logger):
+
+    auction.generate_request_id()
+    mocked_make_request = mocker.MagicMock(return_value={'data': {'status': 'substatus.example'}})
+    mocker.patch('openprocurement.auction.insider.utils.make_request', mocked_make_request)
+
+    update_auction_status(auction, 'substatus.example')
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+    assert log_strings[-2] == 'Switched auction status to substatus.example'
+    assert mocked_make_request.call_count == 1
