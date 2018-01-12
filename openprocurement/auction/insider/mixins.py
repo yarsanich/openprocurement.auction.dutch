@@ -384,6 +384,8 @@ class SealedBidAuctionPhase(object):
         with utils.lock_bids(self), utils.update_auction_document(self):
             self._end_sealedbid = Event()
             run_time = utils.update_stage(self)
+            if not self.debug:
+                utils.update_auction_status(self, 'active.auction.{}'.format(SEALEDBID))
             self.auction_document['current_phase'] = SEALEDBID
             self.get_auction_info()
             self.audit['timeline'][SEALEDBID]['timeline']['start'] =\
@@ -427,6 +429,8 @@ class SealedBidAuctionPhase(object):
             )
             self.approve_audit_info_on_sealedbid(utils.update_stage(self))
             self.auction_document['current_phase'] = PREBESTBID
+            if not self.debug:
+                utils.update_auction_status(self, 'active.auction.{}'.format(BESTBID))
 
 
 class BestBidAuctionPhase(object):

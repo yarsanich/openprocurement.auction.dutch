@@ -34,7 +34,7 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
-    normalize_document
+    normalize_document, update_auction_status
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
@@ -110,6 +110,8 @@ class Auction(DutchDBServiceMixin,
         )
         self.get_auction_info()
         with lock_bids(self), update_auction_document(self):
+            if not self.debug:
+                update_auction_status(self, 'active.auction.{}'.format(DUTCH))
             self.auction_document["current_stage"] = 0
             self.auction_document['current_phase'] = PRESTARTED
             LOGGER.info("Switched current stage to {}".format(
