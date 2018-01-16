@@ -9,7 +9,7 @@ from iso8601 import iso8601
 import pytest
 
 from openprocurement.auction.insider.constants import (
-    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA, DUTCH_ROUNDS
+    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA
 )
 from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
@@ -81,6 +81,7 @@ def test_prepare_audit(auction, mocker):
         "id": u'UA-11111',
         "auctionId": '',
         "auction_id": u'UA-11111',
+        "auctionParameters": {'type': 'dutch', 'steps': 80},
         "items": tender_data['data']['items'],
         "results": 'timeline_stage_object',
         "timeline": {
@@ -91,6 +92,7 @@ def test_prepare_audit(auction, mocker):
         }
     }
 
+    auction.get_auction_info()
     result = prepare_audit(auction)
     assert result == audit
 
@@ -675,8 +677,8 @@ def test_update_stage(auction, mocker, run_time):
 
 
 @pytest.mark.parametrize(
-    'steps', [80, 87, 92, 100],
-    ids=('80 steps', '87 steps', '92 steps', '100 steps')
+    'steps', [80, 87, 92, 99],
+    ids=('80 steps', '87 steps', '92 steps', '99 steps')
 )
 def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
@@ -691,9 +693,10 @@ def test_prepare_auction_document(auction, steps):
 
     auction._auction_data['data']['auctionParameters']['steps'] = steps
     auction.get_auction_info()
-    assert auction.dutch_rounds == steps + 1
+    assert auction.parameters['steps'] == steps
 
-    dutch_step_duration = DUTCH_TIMEDELTA / auction.dutch_rounds
+    dutch_rounds = auction.parameters['steps'] + 1
+    dutch_step_duration = DUTCH_TIMEDELTA / dutch_rounds
     prepare_auction_document(auction)
 
     assert auction.auction_document['title'] == 'Tender Title'
@@ -705,21 +708,19 @@ def test_prepare_auction_document(auction, steps):
         "start": "2014-11-19T12:00:00+00:00"
     }
 
-    assert len(auction.auction_document['stages']) == auction.dutch_rounds + 6
+    assert len(auction.auction_document['stages']) == dutch_rounds + 6
 
     # dutch stages duration
     for index, stage in enumerate(auction.auction_document['stages']):
-        if 1 < index <= auction.dutch_rounds + 1:
+        if 1 < index <= dutch_rounds + 1:
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
 
             if steps == 80:
                 assert delta.seconds == 300
-            elif steps == 100:
-                assert delta.seconds == 240
-                # expected mistake should not be more than 10 milliseconds
-                assert delta.microseconds / 10.0 ** 6 == pytest.approx(0.6, 0.01)
+            elif steps == 99:
+                assert delta.seconds == 243
 
     dutch_timedelta_fast_forward = timedelta(minutes=10)
     dutch_rounds_fast_forward = 10

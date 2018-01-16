@@ -98,6 +98,7 @@ class Auction(DutchDBServiceMixin,
             self.bids_queue = Queue(REQUEST_QUEUE_SIZE)
 
         self.bidders_data = []
+        self.parameters = {}  # configurable auction parameters from API
 
     def start_auction(self):
         self.generate_request_id()

@@ -10,22 +10,24 @@ def test_get_auction_info(auction, logger, mocker):
         assert auction.startDate
 
     with pytest.raises(AttributeError):
-        assert auction.dutch_rounds
+        assert auction.auctionParameters
 
     auction.get_auction_info(prepare=False)
 
     assert isinstance(auction.startDate, datetime.datetime)
-    assert isinstance(auction.dutch_rounds, int)
+    assert isinstance(auction.parameters['steps'], int)
+    assert isinstance(auction.parameters['type'], str)
 
-    # test default dutch_rounds value if auctionParameters.steps was not provided
-    steps = auction._auction_data['data']['auctionParameters']['steps']
-    del auction._auction_data['data']['auctionParameters']['steps']
-    auction.dutch_rounds = None
+    # test default auctionParameters values if such was not provided by API
+    auction_parameters = auction._auction_data['data']['auctionParameters']
+    del auction._auction_data['data']['auctionParameters']
+    auction.parameters = None
 
     auction.get_auction_info(prepare=False)
 
-    assert auction.dutch_rounds == 81
-    auction._auction_data['data']['auctionParameters']['steps'] = steps
+    assert auction.parameters['steps'] == 80
+    assert auction.parameters['type'] == 'dutch'
+    auction._auction_data['data']['auctionParameters'] = auction_parameters
 
     auction.debug = False
     mock_get_tender_data = mocker.MagicMock()
@@ -44,12 +46,13 @@ def test_get_auction_info(auction, logger, mocker):
     mocker.patch('openprocurement.auction.insider.mixins.get_tender_data', mock_get_tender_data)
     auction.generate_request_id()
     auction.startDate = None
-    auction.dutch_rounds = None
+    auction.parameters = None
 
     auction.get_auction_info()
 
     assert isinstance(auction.startDate, datetime.datetime)
-    assert isinstance(auction.dutch_rounds, int)
+    assert isinstance(auction.parameters['steps'], int)
+    assert isinstance(auction.parameters['type'], str)
     assert auction._auction_data['data']['updated_from_get_tender_data']
     mock_get_tender_data.assert_called_once_with(
         auction.tender_url + '/auction',
@@ -181,7 +184,7 @@ def test_prepare_auction_document(auction, mocker):
     assert len(auction.auction_document['stages']) == 16
 
     auction.worker_defaults['sandbox_mode'] = False
-    auction.dutch_rounds = auction.auction_document['test_auction_data']['data']['auctionParameters']['steps'] + 1
+    auction.parameters = auction.auction_document['test_auction_data']['data']['auctionParameters']
     auction.prepare_auction_document()
 
     assert auction.auction_document['_rev'] == 'test_rev'
@@ -201,18 +204,16 @@ def test_prepare_auction_document(auction, mocker):
     for timedelta in timedeltas:
         assert timedelta.seconds == 300
 
-    auction.dutch_rounds = 101
+    auction.parameters['steps'] = 99
 
     auction.prepare_auction_document()
-    assert len(auction.auction_document['stages']) == 107
+    assert len(auction.auction_document['stages']) == 106
 
-    # last dutch stage amount for 100 steps
-    assert auction.auction_document['stages'][101]['amount'] == 0.00
+    # last dutch stage amount for 99 steps
+    assert auction.auction_document['stages'][100]['amount'] == auction.auction_document['value']['amount'] * 0.01
 
     # min dutch stage duration
     timedeltas = [auction.convert_datetime(auction.auction_document['stages'][i]['start']) -
-                  auction.convert_datetime(auction.auction_document['stages'][i-1]['start']) for i in range(2, 102)]
+                  auction.convert_datetime(auction.auction_document['stages'][i-1]['start']) for i in range(2, 101)]
     for timedelta in timedeltas:
-        assert timedelta.seconds == 240
-        # expected mistake should not be more than 10 milliseconds
-        assert timedelta.microseconds / 10.0**6 == pytest.approx(0.6, 0.01)
+        assert timedelta.seconds == 243
