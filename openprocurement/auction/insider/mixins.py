@@ -23,7 +23,7 @@ from openprocurement.auction.worker.journal import\
     AUCTION_WORKER_SERVICE_END_FIRST_PAUSE
 from openprocurement.auction.insider import utils
 from openprocurement.auction.insider.constants import DUTCH,\
-    SEALEDBID, PREBESTBID, PRESEALEDBID, BESTBID
+    SEALEDBID, PREBESTBID, PRESEALEDBID, BESTBID, DUTCH_ROUNDS
 
 
 LOGGER = logging.getLogger("Auction Worker Insider")
@@ -89,6 +89,7 @@ class DutchDBServiceMixin(DBServiceMixin):
             for bid in self._auction_data['data'].get('bids', [])
             if bid.get('status', 'active') == 'active'
         ]
+        self.dutch_rounds = self._auction_data['data'].get('auctionParameters', {}).get('steps', DUTCH_ROUNDS - 1) + 1
         for index, bid in enumerate(self.bidders_data):
             if bid['id'] not in self.mapping:
                 self.mapping[self.bidders_data[index]['id']]\

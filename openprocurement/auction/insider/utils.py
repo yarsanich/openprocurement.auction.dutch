@@ -261,7 +261,8 @@ def prepare_auction_document(auction, fast_forward=False):
         FIRST_PAUSE = timedelta(seconds=10)
     else:
         from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
-            DUTCH_ROUNDS, FIRST_PAUSE
+            FIRST_PAUSE
+        DUTCH_ROUNDS = auction.dutch_rounds
     dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
     next_stage_timedelta = auction.startDate
     amount = auction.auction_document['value']['amount']
