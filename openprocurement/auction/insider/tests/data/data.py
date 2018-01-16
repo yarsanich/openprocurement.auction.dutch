@@ -14,6 +14,10 @@ tender_data = {
             "startDate": "2016-12-26T15:50:14.003746+02:00",
             "endDate": None
         },
+        "auctionParameters": {
+            "type": "dutch",
+            "steps": 80
+        },
         "bids": [{
             "date": "2014-11-19T08:22:21.726234+00:00",
             "id": "c26d9eed99624c338ce0fca58a0aac32",

@@ -9,9 +9,23 @@ def test_get_auction_info(auction, logger, mocker):
     with pytest.raises(AttributeError):
         assert auction.startDate
 
+    with pytest.raises(AttributeError):
+        assert auction.dutch_rounds
+
     auction.get_auction_info(prepare=False)
 
     assert isinstance(auction.startDate, datetime.datetime)
+    assert isinstance(auction.dutch_rounds, int)
+
+    # test default dutch_rounds value if auctionParameters.steps was not provided
+    steps = auction._auction_data['data']['auctionParameters']['steps']
+    del auction._auction_data['data']['auctionParameters']['steps']
+    auction.dutch_rounds = None
+
+    auction.get_auction_info(prepare=False)
+
+    assert auction.dutch_rounds == 81
+    auction._auction_data['data']['auctionParameters']['steps'] = steps
 
     auction.debug = False
     mock_get_tender_data = mocker.MagicMock()
@@ -20,16 +34,22 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'dutch',
+                'steps': 80
             }
         }
     }
     mocker.patch('openprocurement.auction.insider.mixins.get_tender_data', mock_get_tender_data)
     auction.generate_request_id()
     auction.startDate = None
+    auction.dutch_rounds = None
 
     auction.get_auction_info()
 
     assert isinstance(auction.startDate, datetime.datetime)
+    assert isinstance(auction.dutch_rounds, int)
     assert auction._auction_data['data']['updated_from_get_tender_data']
     mock_get_tender_data.assert_called_once_with(
         auction.tender_url + '/auction',
@@ -43,6 +63,10 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'dutch',
+                'steps': 80
             }
         }
     }, None]
@@ -81,6 +105,10 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'dutch',
+                'steps': 80
             }
         }
     }, None]
@@ -153,7 +181,7 @@ def test_prepare_auction_document(auction, mocker):
     assert len(auction.auction_document['stages']) == 16
 
     auction.worker_defaults['sandbox_mode'] = False
-
+    auction.dutch_rounds = auction.auction_document['test_auction_data']['data']['auctionParameters']['steps'] + 1
     auction.prepare_auction_document()
 
     assert auction.auction_document['_rev'] == 'test_rev'
@@ -166,3 +194,25 @@ def test_prepare_auction_document(auction, mocker):
     assert mock_save_auction_document.call_count == 2
     assert mock_get_auction_info.call_count == 2
     assert len(auction.auction_document['stages']) == 87
+
+    # max dutch stages duration
+    timedeltas = [auction.convert_datetime(auction.auction_document['stages'][i]['start']) -
+                  auction.convert_datetime(auction.auction_document['stages'][i - 1]['start']) for i in range(2, 82)]
+    for timedelta in timedeltas:
+        assert timedelta.seconds == 300
+
+    auction.dutch_rounds = 101
+
+    auction.prepare_auction_document()
+    assert len(auction.auction_document['stages']) == 107
+
+    # last dutch stage amount for 100 steps
+    assert auction.auction_document['stages'][101]['amount'] == 0.00
+
+    # min dutch stage duration
+    timedeltas = [auction.convert_datetime(auction.auction_document['stages'][i]['start']) -
+                  auction.convert_datetime(auction.auction_document['stages'][i-1]['start']) for i in range(2, 102)]
+    for timedelta in timedeltas:
+        assert timedelta.seconds == 240
+        # expected mistake should not be more than 10 milliseconds
+        assert timedelta.microseconds / 10.0**6 == pytest.approx(0.6, 0.01)
