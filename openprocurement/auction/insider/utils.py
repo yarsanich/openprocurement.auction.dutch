@@ -263,6 +263,7 @@ def prepare_auction_document(auction, fast_forward=False):
     else:
         from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
             FIRST_PAUSE
+        # Additional round is needed to provide set amount of steps (auction starts with initial price)
         DUTCH_ROUNDS = auction.parameters['steps'] + 1
     dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
     next_stage_timedelta = auction.startDate
