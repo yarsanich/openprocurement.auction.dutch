@@ -6,8 +6,8 @@
             "startDate": "2016-12-26T15:50:14.003746+02:00"
         },
         "auctionParameters": {
-            "type": "dutch",
-            "steps": 80
+            "type": "insider",
+            "dutchSteps": 80
         },
         "bids": [
             {

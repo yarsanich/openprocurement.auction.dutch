@@ -15,8 +15,8 @@ tender_data = {
             "endDate": None
         },
         "auctionParameters": {
-            "type": "dutch",
-            "steps": 80
+            "type": "insider",
+            "dutchSteps": 80
         },
         "bids": [{
             "date": "2014-11-19T08:22:21.726234+00:00",

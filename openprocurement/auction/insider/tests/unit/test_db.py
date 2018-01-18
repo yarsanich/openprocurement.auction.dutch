@@ -15,7 +15,7 @@ def test_get_auction_info(auction, logger, mocker):
     auction.get_auction_info(prepare=False)
 
     assert isinstance(auction.startDate, datetime.datetime)
-    assert isinstance(auction.parameters['steps'], int)
+    assert isinstance(auction.parameters['dutchSteps'], int)
     assert isinstance(auction.parameters['type'], str)
 
     # test default auctionParameters values if such was not provided by API
@@ -25,8 +25,8 @@ def test_get_auction_info(auction, logger, mocker):
 
     auction.get_auction_info(prepare=False)
 
-    assert auction.parameters['steps'] == 80
-    assert auction.parameters['type'] == 'dutch'
+    assert auction.parameters['dutchSteps'] == 80
+    assert auction.parameters['type'] == 'insider'
     auction._auction_data['data']['auctionParameters'] = auction_parameters
 
     auction.debug = False
@@ -38,8 +38,8 @@ def test_get_auction_info(auction, logger, mocker):
                 'startDate': '2017-12-12'
             },
             'auctionParameters': {
-                'type': 'dutch',
-                'steps': 80
+                'type': 'insider',
+                'dutchSteps': 80
             }
         }
     }
@@ -51,7 +51,7 @@ def test_get_auction_info(auction, logger, mocker):
     auction.get_auction_info()
 
     assert isinstance(auction.startDate, datetime.datetime)
-    assert isinstance(auction.parameters['steps'], int)
+    assert isinstance(auction.parameters['dutchSteps'], int)
     assert isinstance(auction.parameters['type'], str)
     assert auction._auction_data['data']['updated_from_get_tender_data']
     mock_get_tender_data.assert_called_once_with(
@@ -204,7 +204,7 @@ def test_prepare_auction_document(auction, mocker):
     for timedelta in timedeltas:
         assert timedelta.seconds == 300
 
-    auction.parameters['steps'] = 99
+    auction.parameters['dutchSteps'] = 99
 
     auction.prepare_auction_document()
     assert len(auction.auction_document['stages']) == 106

@@ -81,7 +81,7 @@ def test_prepare_audit(auction, mocker):
         "id": u'UA-11111',
         "auctionId": '',
         "auction_id": u'UA-11111',
-        "auctionParameters": {'type': 'dutch', 'steps': 80},
+        "auctionParameters": {'type': 'insider', 'dutchSteps': 80},
         "items": tender_data['data']['items'],
         "results": 'timeline_stage_object',
         "timeline": {
@@ -691,11 +691,11 @@ def test_prepare_auction_document(auction, steps):
     auction.startDate = iso8601.parse_date('2014-11-19T12:00:00+00:00')
     auction.auction_document = {}
 
-    auction._auction_data['data']['auctionParameters']['steps'] = steps
+    auction._auction_data['data']['auctionParameters']['dutchSteps'] = steps
     auction.get_auction_info()
-    assert auction.parameters['steps'] == steps
+    assert auction.parameters['dutchSteps'] == steps
 
-    dutch_rounds = auction.parameters['steps'] + 1
+    dutch_rounds = auction.parameters['dutchSteps'] + 1
     dutch_step_duration = DUTCH_TIMEDELTA / dutch_rounds
     prepare_auction_document(auction)
 
