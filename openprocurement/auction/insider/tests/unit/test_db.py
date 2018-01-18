@@ -9,9 +9,25 @@ def test_get_auction_info(auction, logger, mocker):
     with pytest.raises(AttributeError):
         assert auction.startDate
 
+    with pytest.raises(AttributeError):
+        assert auction.auctionParameters
+
     auction.get_auction_info(prepare=False)
 
     assert isinstance(auction.startDate, datetime.datetime)
+    assert isinstance(auction.parameters['dutchSteps'], int)
+    assert isinstance(auction.parameters['type'], str)
+
+    # test default auctionParameters values if such was not provided by API
+    auction_parameters = auction._auction_data['data']['auctionParameters']
+    del auction._auction_data['data']['auctionParameters']
+    auction.parameters = None
+
+    auction.get_auction_info(prepare=False)
+
+    assert auction.parameters['dutchSteps'] == 80
+    assert auction.parameters['type'] == 'insider'
+    auction._auction_data['data']['auctionParameters'] = auction_parameters
 
     auction.debug = False
     mock_get_tender_data = mocker.MagicMock()
@@ -20,16 +36,23 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'insider',
+                'dutchSteps': 80
             }
         }
     }
     mocker.patch('openprocurement.auction.insider.mixins.get_tender_data', mock_get_tender_data)
     auction.generate_request_id()
     auction.startDate = None
+    auction.parameters = None
 
     auction.get_auction_info()
 
     assert isinstance(auction.startDate, datetime.datetime)
+    assert isinstance(auction.parameters['dutchSteps'], int)
+    assert isinstance(auction.parameters['type'], str)
     assert auction._auction_data['data']['updated_from_get_tender_data']
     mock_get_tender_data.assert_called_once_with(
         auction.tender_url + '/auction',
@@ -43,6 +66,10 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'dutch',
+                'steps': 80
             }
         }
     }, None]
@@ -81,6 +108,10 @@ def test_get_auction_info(auction, logger, mocker):
             'updated_from_get_tender_data': True,
             'auctionPeriod': {
                 'startDate': '2017-12-12'
+            },
+            'auctionParameters': {
+                'type': 'dutch',
+                'steps': 80
             }
         }
     }, None]
@@ -153,7 +184,7 @@ def test_prepare_auction_document(auction, mocker):
     assert len(auction.auction_document['stages']) == 16
 
     auction.worker_defaults['sandbox_mode'] = False
-
+    auction.parameters = auction.auction_document['test_auction_data']['data']['auctionParameters']
     auction.prepare_auction_document()
 
     assert auction.auction_document['_rev'] == 'test_rev'
@@ -166,3 +197,23 @@ def test_prepare_auction_document(auction, mocker):
     assert mock_save_auction_document.call_count == 2
     assert mock_get_auction_info.call_count == 2
     assert len(auction.auction_document['stages']) == 87
+
+    # max dutch stages duration
+    timedeltas = [auction.convert_datetime(auction.auction_document['stages'][i]['start']) -
+                  auction.convert_datetime(auction.auction_document['stages'][i - 1]['start']) for i in range(2, 82)]
+    for timedelta in timedeltas:
+        assert timedelta.seconds == 300
+
+    auction.parameters['dutchSteps'] = 99
+
+    auction.prepare_auction_document()
+    assert len(auction.auction_document['stages']) == 106
+
+    # last dutch stage amount for 99 steps
+    assert auction.auction_document['stages'][100]['amount'] == auction.auction_document['value']['amount'] * 0.01
+
+    # min dutch stage duration
+    timedeltas = [auction.convert_datetime(auction.auction_document['stages'][i]['start']) -
+                  auction.convert_datetime(auction.auction_document['stages'][i-1]['start']) for i in range(2, 101)]
+    for timedelta in timedeltas:
+        assert timedelta.seconds == 243

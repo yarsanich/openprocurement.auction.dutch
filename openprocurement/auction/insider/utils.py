@@ -149,6 +149,7 @@ def prepare_audit(auction):
         "id": auction.auction_doc_id,
         "auctionId": auction_data["data"].get("auctionID", ""),
         "auction_id": auction.tender_id,
+        "auctionParameters": auction.parameters,
         "items": auction_data["data"].get("items", []),
         "results": prepare_timeline_stage(),
         "timeline": {
@@ -261,7 +262,9 @@ def prepare_auction_document(auction, fast_forward=False):
         FIRST_PAUSE = timedelta(seconds=10)
     else:
         from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
-            DUTCH_ROUNDS, FIRST_PAUSE
+            FIRST_PAUSE
+        # Additional round is needed to provide set amount of steps (auction starts with initial price)
+        DUTCH_ROUNDS = int(auction.parameters['dutchSteps']) + 1
     dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
     next_stage_timedelta = auction.startDate
     amount = auction.auction_document['value']['amount']
@@ -269,6 +272,7 @@ def prepare_auction_document(auction, fast_forward=False):
         start=auction.startDate.isoformat(),
         type="pause"
     )]
+    auction.auction_document['auctionParameters'] = auction.parameters
     next_stage_timedelta += FIRST_PAUSE
     for index in range(DUTCH_ROUNDS + 1):
         if index == DUTCH_ROUNDS:

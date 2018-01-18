@@ -9,7 +9,7 @@ from iso8601 import iso8601
 import pytest
 
 from openprocurement.auction.insider.constants import (
-    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA, DUTCH_ROUNDS
+    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA
 )
 from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
@@ -82,6 +82,7 @@ def test_prepare_audit(auction, mocker):
         "id": u'UA-11111',
         "auctionId": '',
         "auction_id": u'UA-11111',
+        "auctionParameters": {'type': 'insider', 'dutchSteps': 80},
         "items": tender_data['data']['items'],
         "results": 'timeline_stage_object',
         "timeline": {
@@ -92,6 +93,7 @@ def test_prepare_audit(auction, mocker):
         }
     }
 
+    auction.get_auction_info()
     result = prepare_audit(auction)
     assert result == audit
 
@@ -675,7 +677,11 @@ def test_update_stage(auction, mocker, run_time):
     assert mock_isoformat.call_count == 1
 
 
-def test_prepare_auction_document(auction, mocker, logger):
+@pytest.mark.parametrize(
+    'steps', [80, 87, 92, 99],
+    ids=('80 steps', '87 steps', '92 steps', '99 steps')
+)
+def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
         prepare_auction_document(auction)
 
@@ -686,8 +692,12 @@ def test_prepare_auction_document(auction, mocker, logger):
     auction.startDate = iso8601.parse_date('2014-11-19T12:00:00+00:00')
     auction.auction_document = {}
 
-    dutch_step_duration = DUTCH_TIMEDELTA / DUTCH_ROUNDS
+    auction._auction_data['data']['auctionParameters']['dutchSteps'] = steps
+    auction.get_auction_info()
+    assert auction.parameters['dutchSteps'] == steps
 
+    dutch_rounds = auction.parameters['dutchSteps'] + 1
+    dutch_step_duration = DUTCH_TIMEDELTA / dutch_rounds
     prepare_auction_document(auction)
 
     assert auction.auction_document['title'] == 'Tender Title'
@@ -699,17 +709,23 @@ def test_prepare_auction_document(auction, mocker, logger):
         "start": "2014-11-19T12:00:00+00:00"
     }
 
-    assert len(auction.auction_document['stages']) == DUTCH_ROUNDS + 6
+    assert len(auction.auction_document['stages']) == dutch_rounds + 6
 
+    # dutch stages duration
     for index, stage in enumerate(auction.auction_document['stages']):
-        if index not in {0, 1} and index <= DUTCH_ROUNDS + 1:
+        if 1 < index <= dutch_rounds + 1:
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
 
-    DUTCH_TIMEDELTA_FAST_FORWARD = timedelta(minutes=10)
-    DUTCH_ROUNDS_FAST_FORWARD = 10
-    dutch_step_duration = DUTCH_TIMEDELTA_FAST_FORWARD / DUTCH_ROUNDS_FAST_FORWARD
+            if steps == 80:
+                assert delta.seconds == 300
+            elif steps == 99:
+                assert delta.seconds == 243
+
+    dutch_timedelta_fast_forward = timedelta(minutes=10)
+    dutch_rounds_fast_forward = 10
+    dutch_step_duration = dutch_timedelta_fast_forward / dutch_rounds_fast_forward
 
     prepare_auction_document(auction, fast_forward=True)
 
@@ -722,13 +738,14 @@ def test_prepare_auction_document(auction, mocker, logger):
         "start": "2014-11-19T12:00:00+00:00"
     }
 
-    assert len(auction.auction_document['stages']) == DUTCH_ROUNDS_FAST_FORWARD + 6
+    assert len(auction.auction_document['stages']) == dutch_rounds_fast_forward + 6
 
+    # dutch stages duration fast_forward
     for index, stage in enumerate(auction.auction_document['stages']):
-        if index not in {0, 1} and index <= DUTCH_ROUNDS_FAST_FORWARD + 1:
+        if 1 < index <= dutch_rounds_fast_forward + 1:
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
-            assert delta == dutch_step_duration
+            assert delta == dutch_step_duration == timedelta(0, 60)
 
 
 def test_update_auction_status(auction, mocker, logger):
