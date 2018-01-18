@@ -5,6 +5,10 @@
             "endDate": null,
             "startDate": "2016-12-26T15:50:14.003746+02:00"
         },
+        "auctionParameters": {
+            "type": "insider",
+            "dutchSteps": 80
+        },
         "bids": [
             {
                 "date": "2014-11-19T08:22:21.726234+00:00",
