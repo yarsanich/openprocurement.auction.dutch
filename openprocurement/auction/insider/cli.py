@@ -38,7 +38,7 @@ def main():
             C.PLANNING_PARTIAL_CRON
         ]
     )
-    parser.add_argument('-f', '--fast_forward',
+    parser.add_argument('-f', '--fast-forward',
                         help="run test fast forward", action="store_true")
 
     args = parser.parse_args()
