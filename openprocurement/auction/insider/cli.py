@@ -14,7 +14,6 @@ from datetime import timedelta
 from openprocurement.auction.insider.auction import Auction,\
     SCHEDULER
 from openprocurement.auction.worker import constants as C
-from openprocurement.auction.insider import constants as IC
 
 
 def main():
@@ -42,11 +41,13 @@ def main():
                         help="run test fast forward", action="store_true")
 
     args = parser.parse_args()
-
     if args.fast_forward:
-        IC.DUTCH_TIMEDELTA = timedelta(minutes=3)
-        IC.SEALEDBID_TIMEDELTA = timedelta(minutes=2)
-        IC.BESTBID_TIMEDELTA = timedelta(minutes=2)
+        from openprocurement.auction.insider import constants, utils
+        constants.DUTCH_TIMEDELTA = timedelta(seconds=50)
+        constants.FIRST_PAUSE = timedelta(seconds=10)
+        utils.SEALEDBID_TIMEDELTA = timedelta(seconds=100)
+        utils.BESTBID_TIMEDELTA = timedelta(seconds=30)
+        utils.END_PHASE_PAUSE = timedelta(seconds=10)
 
     if os.path.isfile(args.auction_worker_config):
         worker_defaults = yaml.load(open(args.auction_worker_config))
