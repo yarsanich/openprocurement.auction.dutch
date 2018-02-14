@@ -677,8 +677,8 @@ def test_update_stage(auction, mocker, run_time):
 
 
 @pytest.mark.parametrize(
-    'steps', [80, 87, 92, 99],
-    ids=('80 steps', '87 steps', '92 steps', '99 steps')
+    'steps', [50, 60, 70, 80, 99, 100],
+    ids=('50 steps', '60 steps', '70 steps', '80 steps', '99 steps', '100 steps')
 )
 def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
@@ -709,6 +709,14 @@ def test_prepare_auction_document(auction, steps):
     }
 
     assert len(auction.auction_document['stages']) == dutch_rounds + 6
+
+    # dutch phase final stage value
+    if steps != 100:
+        assert auction.auction_document['stages'][1+steps]['amount'] == \
+               Decimal(str(auction.auction_document['value']['amount'] -
+                           auction.auction_document['value']['amount'] * 0.01 * steps))
+    else:
+        assert auction.auction_document['stages'][1+steps]['amount'] == Decimal('1.00')
 
     # dutch stages duration
     for index, stage in enumerate(auction.auction_document['stages']):
