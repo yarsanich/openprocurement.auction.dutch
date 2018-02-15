@@ -677,8 +677,8 @@ def test_update_stage(auction, mocker, run_time):
 
 
 @pytest.mark.parametrize(
-    'steps', [50, 60, 70, 80, 99, 100],
-    ids=('50 steps', '60 steps', '70 steps', '80 steps', '99 steps', '100 steps')
+    'steps', [50, 60, 70, 80, 99],
+    ids=('50 steps', '60 steps', '70 steps', '80 steps', '99 steps')
 )
 def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
@@ -711,12 +711,9 @@ def test_prepare_auction_document(auction, steps):
     assert len(auction.auction_document['stages']) == dutch_rounds + 6
 
     # dutch phase final stage value
-    if steps != 100:
-        assert auction.auction_document['stages'][1+steps]['amount'] == \
-               Decimal(str(auction.auction_document['value']['amount'] -
-                           auction.auction_document['value']['amount'] * 0.01 * steps))
-    else:
-        assert auction.auction_document['stages'][1+steps]['amount'] == Decimal('1.00')
+    assert auction.auction_document['stages'][1+steps]['amount'] == \
+           Decimal(str(auction.auction_document['value']['amount'] -
+                       auction.auction_document['value']['amount'] * 0.01 * steps))
 
     # dutch stages duration
     for index, stage in enumerate(auction.auction_document['stages']):
@@ -724,11 +721,6 @@ def test_prepare_auction_document(auction, steps):
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
-
-            if steps == 80:
-                assert delta.seconds == 300
-            elif steps == 99:
-                assert delta.seconds == 243
 
     dutch_timedelta_fast_forward = timedelta(minutes=10)
     dutch_rounds_fast_forward = 10
@@ -753,3 +745,21 @@ def test_prepare_auction_document(auction, steps):
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration == timedelta(0, 60)
+
+
+def test_prepare_auction_document_100_steps(auction):
+    tender_data_copy = deepcopy(tender_data)
+    tender_data_copy['data']['title_ru'] = u'Описание Тендера'
+    auction._auction_data = tender_data_copy
+
+    auction.startDate = iso8601.parse_date('2014-11-19T12:00:00+00:00')
+    auction.auction_document = {}
+
+    auction._auction_data['data']['auctionParameters']['dutchSteps'] = 100
+    auction.get_auction_info()
+    assert auction.parameters['dutchSteps'] == 100
+
+    prepare_auction_document(auction)
+
+    # dutch phase final stage value
+    assert auction.auction_document['stages'][101]['amount'] == Decimal('1.00')
