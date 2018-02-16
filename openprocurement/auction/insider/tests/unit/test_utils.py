@@ -677,8 +677,9 @@ def test_update_stage(auction, mocker, run_time):
 
 
 @pytest.mark.parametrize(
-    'steps', [50, 60, 70, 80, 99],
-    ids=('50 steps', '60 steps', '70 steps', '80 steps', '99 steps')
+    'steps', [10, 20, 30, 40, 50, 60, 70, 80, 90, 99],
+    ids=('10 steps', '20 steps', '30 steps', '40 steps', '50 steps',
+         '60 steps', '70 steps', '80 steps', '90 steps', '99 steps')
 )
 def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
