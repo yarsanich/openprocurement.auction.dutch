@@ -220,9 +220,10 @@ def prepare_auction_data(data):
 
 
 def calculate_next_stage_amount(auction, index):
-    return (Decimal(str(auction.auction_document['initial_value'])) *
-            Decimal(str((PERCENT_FROM_INITIAL_VALUE - (index + 1)) * 0.01))).quantize(Decimal('0.01'),
-                                                                                      rounding=ROUND_HALF_UP)
+    amount = (Decimal(str(auction.auction_document['initial_value'])) *
+              Decimal(str((PERCENT_FROM_INITIAL_VALUE - (index + 1)) * 0.01))).quantize(Decimal('0.01'),
+                                                                                        rounding=ROUND_HALF_UP)
+    return amount if amount else Decimal('1.00')
 
 
 def prepare_auction_document(auction, fast_forward=False):
