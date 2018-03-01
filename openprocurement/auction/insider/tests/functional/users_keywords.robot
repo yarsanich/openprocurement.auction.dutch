@@ -42,7 +42,7 @@ ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), 
     ${step_amount}=  calculate_step_amount  ${TENDER}
     Set Global Variable  ${step_amount}
     ${invalid_amount}=  Evaluate  ${step_amount}-1
-    Поставити ставку  ${invalid_amount}  Ваша ставка повинна перевищувати ставку переможця етапу закритих цінових пропозицій  ${sealedbid_amount}
+    Поставити ставку  ${invalid_amount}  Ваша ставка повинна перевищувати ставку переможця попередньої стадії як мінімум на 1 крок (1% від початкової вартості)  ${sealedbid_amount}
 
 Поставити ставку
     [Arguments]  ${step}  ${msg}  ${locator}

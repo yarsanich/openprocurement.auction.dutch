@@ -8,8 +8,7 @@ from urllib import quote
 from robot.libraries.BuiltIn import BuiltIn
 from Selenium2Library import utils
 
-positions = [(0, 0), (300, 0), (600, 0), (900, 0), (1200, 0)]
-size = (300, 1200)
+size = (1700, 1200)
 
 def prepare_tender_data():
     tender_file_path = BuiltIn().get_variable_value("${tender_file_path}")
@@ -30,7 +29,7 @@ def prepare_users_data(tender_data):
                 bid["id"], signature
             ),
             'amount': bid.get('value', {}).get('amount', ''),
-            'position': positions[index],
+            'position': (0, 0),
             'size': size
         }
     return users_data

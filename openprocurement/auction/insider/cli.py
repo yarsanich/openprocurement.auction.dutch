@@ -9,6 +9,8 @@ import yaml
 import sys
 import os
 
+from datetime import timedelta
+
 from openprocurement.auction.insider.auction import Auction,\
     SCHEDULER
 from openprocurement.auction.worker import constants as C
@@ -35,8 +37,17 @@ def main():
             C.PLANNING_PARTIAL_CRON
         ]
     )
+    parser.add_argument('-f', '--fast-forward',
+                        help="run test fast forward", action="store_true")
 
     args = parser.parse_args()
+    if args.fast_forward:
+        from openprocurement.auction.insider import constants, utils
+        constants.DUTCH_TIMEDELTA = timedelta(seconds=50)
+        constants.FIRST_PAUSE = timedelta(seconds=10)
+        utils.SEALEDBID_TIMEDELTA = timedelta(seconds=100)
+        utils.BESTBID_TIMEDELTA = timedelta(seconds=30)
+        utils.END_PHASE_PAUSE = timedelta(seconds=10)
 
     if os.path.isfile(args.auction_worker_config):
         worker_defaults = yaml.load(open(args.auction_worker_config))

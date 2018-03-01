@@ -678,8 +678,9 @@ def test_update_stage(auction, mocker, run_time):
 
 
 @pytest.mark.parametrize(
-    'steps', [80, 87, 92, 99],
-    ids=('80 steps', '87 steps', '92 steps', '99 steps')
+    'steps', [10, 20, 30, 40, 50, 60, 70, 80, 90, 99],
+    ids=('10 steps', '20 steps', '30 steps', '40 steps', '50 steps',
+         '60 steps', '70 steps', '80 steps', '90 steps', '99 steps')
 )
 def test_prepare_auction_document(auction, steps):
     with pytest.raises(AttributeError):
@@ -711,17 +712,17 @@ def test_prepare_auction_document(auction, steps):
 
     assert len(auction.auction_document['stages']) == dutch_rounds + 6
 
+    # dutch phase final stage value
+    assert auction.auction_document['stages'][1+steps]['amount'] == \
+           Decimal(str(auction.auction_document['value']['amount'] -
+                       auction.auction_document['value']['amount'] * 0.01 * steps))
+
     # dutch stages duration
     for index, stage in enumerate(auction.auction_document['stages']):
         if 1 < index <= dutch_rounds + 1:
             delta = iso8601.parse_date(stage['start']) - \
                     iso8601.parse_date(auction.auction_document['stages'][index - 1]['start'])
             assert delta == dutch_step_duration
-
-            if steps == 80:
-                assert delta.seconds == 300
-            elif steps == 99:
-                assert delta.seconds == 243
 
     dutch_timedelta_fast_forward = timedelta(minutes=10)
     dutch_rounds_fast_forward = 10
@@ -758,3 +759,21 @@ def test_update_auction_status(auction, mocker, logger):
     log_strings = logger.log_capture_string.getvalue().split('\n')
     assert log_strings[-2] == 'Switched auction status to substatus.example'
     assert mocked_make_request.call_count == 1
+
+
+def test_prepare_auction_document_100_steps(auction):
+    tender_data_copy = deepcopy(tender_data)
+    tender_data_copy['data']['title_ru'] = u'Описание Тендера'
+    auction._auction_data = tender_data_copy
+
+    auction.startDate = iso8601.parse_date('2014-11-19T12:00:00+00:00')
+    auction.auction_document = {}
+
+    auction._auction_data['data']['auctionParameters']['dutchSteps'] = 100
+    auction.get_auction_info()
+    assert auction.parameters['dutchSteps'] == 100
+
+    prepare_auction_document(auction)
+
+    # dutch phase final stage value
+    assert auction.auction_document['stages'][101]['amount'] == Decimal('1.00')
