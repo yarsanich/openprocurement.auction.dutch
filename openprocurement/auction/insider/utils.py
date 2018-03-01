@@ -365,3 +365,13 @@ def normalize_document(document):
                 normalized[field][index]['amount'] = str(stage['amount'])
     return normalized
 
+
+def update_auction_status(auction, status):
+    response = make_request(
+        auction.tender_url, data={"data": {"status": status}},
+        user=auction.worker_defaults["resource_api_token"],
+        method='patch',
+        request_id=auction.request_id,
+        session=auction.session
+    )
+    LOGGER.info("Switched auction status to {}".format(response['data']['status']))
