@@ -34,7 +34,7 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
-    normalize_document
+    normalize_document, init_services
 from openprocurement.auction.utils import delete_mapping, sorting_by_amount
 
 
@@ -67,26 +67,17 @@ class Auction(DutchDBServiceMixin,
         self.tender_id = tender_id
         self.auction_doc_id = tender_id
         self._end_auction_event = Event()
-        self.tender_url = urljoin(
-            worker_defaults["resource_api_server"],
-            '/api/{0}/auctions/{1}'.format(
-                worker_defaults["resource_api_version"], tender_id
-            )
-        )
         if auction_data:
             self.debug = True
             LOGGER.setLevel(logging.DEBUG)
             self._auction_data = auction_data
         else:
             self.debug = False
+        self.worker_defaults = worker_defaults
+        init_services(self)
         self.bids_actions = BoundedSemaphore()
         self.session = RequestsSession()
         self.features = {}  # bw
-        self.worker_defaults = worker_defaults
-        if self.worker_defaults.get('with_document_service', False):
-            self.session_ds = RequestsSession()
-        self.db = Database(str(self.worker_defaults["COUCH_DATABASE"]),
-                           session=Session(retry_delays=range(10)))
         self.audit = {}
         self.retries = 10
         self.mapping = {}

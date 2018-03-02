@@ -73,6 +73,8 @@ def main():
     auction = Auction(args.auction_doc_id,
                       worker_defaults=worker_defaults,
                       auction_data=auction_data)
+    if args.cmd == 'check':
+        exit()
     if args.cmd == 'run':
         SCHEDULER.start()
         auction.schedule_auction()
