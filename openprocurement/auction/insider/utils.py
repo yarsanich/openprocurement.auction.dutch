@@ -4,13 +4,9 @@ import logging
 from contextlib import contextmanager
 from copy import deepcopy
 from decimal import Decimal, ROUND_HALF_UP
-from urlparse import urljoin
 from datetime import datetime, timedelta
 
-from couchdb import Session, Server
 from dateutil.tz import tzlocal
-from requests import request, Session as RequestsSession
-
 from openprocurement.auction.utils import (
     get_latest_bid_for_bidder,
     make_request, get_tender_data,
@@ -29,16 +25,6 @@ from openprocurement.auction.insider.constants import (
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 )
 
-logging.addLevelName(25, 'CHECK')
-
-
-def check(self, msg, exc=None, *args, **kwargs):
-    self.log(25, msg)
-    if exc:
-        self.error(exc, exc_info=True)
-
-
-logging.Logger.check = check
 
 LOGGER = logging.getLogger("Auction Worker Insider")
 
@@ -379,63 +365,3 @@ def normalize_document(document):
             if isinstance(stage.get('amount'), Decimal):
                 normalized[field][index]['amount'] = str(stage['amount'])
     return normalized
-
-
-def init_services(auction):
-    exceptions = []
-
-    # Checking API availability
-    result = ('ok', None)
-    api_url = "{resource_api_server}/api/{resource_api_version}/health"
-    try:
-        if auction.debug:
-            response = True
-        else:
-            response = make_request(url=api_url.format(**auction.worker_defaults),
-                                    method="get", retry_count=5)
-        if not response:
-            raise Exception("Auction DS can't be reached")
-    except Exception as e:
-        exceptions.append(e)
-        result = ('failed', e)
-    else:
-        auction.tender_url = urljoin(
-            auction.worker_defaults["resource_api_server"],
-            "/api/{0}/{1}/{2}".format(
-                auction.worker_defaults["resource_api_version"],
-                auction.worker_defaults["resource_name"],
-                auction.tender_id
-            )
-        )
-    LOGGER.check('{} - {}'.format("Document Service", result[0]), result[1])
-
-    # Checking DS availability
-    result = ('ok', None)
-    if auction.worker_defaults.get("with_document_service", False):
-        ds_config = auction.worker_defaults.get("DOCUMENT_SERVICE")
-        try:
-            resp = request("GET", ds_config.get("url"), timeout=5)
-            if not resp or resp.status_code != 200:
-                raise Exception("Auction DS can't be reached")
-        except Exception as e:
-            exceptions.append(e)
-            result = ('failed', e)
-        else:
-            auction.session_ds = RequestsSession()
-    LOGGER.check('{} - {}'.format("API", result[0]), result[1])
-
-    # Checking CouchDB availability
-    result = ('ok', None)
-    server, db = auction.worker_defaults.get("COUCH_DATABASE").rsplit('/', 1)
-    try:
-        server = Server(server, session=Session(retry_delays=range(10)))
-        database = server[db] if db in server else server.create(db)
-    except Exception as e:
-        exceptions.append(e)
-        result = ('failed', e)
-    else:
-        auction.db = database
-    LOGGER.check('{} - {}'.format("CouchDB", result[0]), result[1])
-
-    if exceptions:
-        raise exceptions[0]

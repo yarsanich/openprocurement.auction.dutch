@@ -74,7 +74,7 @@ def main():
                       worker_defaults=worker_defaults,
                       auction_data=auction_data)
     if args.cmd == 'check':
-        exit()
+        sys.exit()
     if args.cmd == 'run':
         SCHEDULER.start()
         auction.schedule_auction()
