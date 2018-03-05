@@ -1,28 +1,26 @@
 import logging
 from couchdb.json import use
-from requests import Session as RequestsSession, request
-from urlparse import urljoin
+from requests import Session as RequestsSession
 from collections import defaultdict
 from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
 
 from apscheduler.schedulers.gevent import GeventScheduler
-from couchdb import Database, Session, Server
 from yaml import safe_dump as yaml_dump
 from datetime import datetime
 from dateutil.tz import tzlocal
 from functools import partial
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
-from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
-    AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
+from openprocurement.auction.worker.mixins import RequestIDServiceMixin, \
+    AuditServiceMixin, DateTimeServiceMixin, TIMEZONE, InitializeServiceMixin
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
     BestBidAuctionPhase
 from openprocurement.auction.insider.constants import REQUEST_QUEUE_SIZE,\
-    REQUEST_QUEUE_TIMEOUT, DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
-    BESTBID, END, PRESTARTED, BIDS_KEYS_FOR_COPY
+    DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
+    BESTBID, END, PRESTARTED
 from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_AUCTION,\
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
@@ -33,9 +31,8 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
-    update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
-    normalize_document
-from openprocurement.auction.utils import delete_mapping, sorting_by_amount, make_request
+    update_auction_document, lock_bids, normalize_audit
+from openprocurement.auction.utils import delete_mapping
 
 logging.addLevelName(25, 'CHECK')
 
@@ -70,6 +67,7 @@ class Auction(DutchDBServiceMixin,
               AuditServiceMixin,
               DateTimeServiceMixin,
               RequestIDServiceMixin,
+              InitializeServiceMixin,
               DutchAuctionPhase,
               SealedBidAuctionPhase,
               BestBidAuctionPhase,
@@ -388,64 +386,3 @@ class Auction(DutchDBServiceMixin,
             self.upload_audit_file_with_document_service()
         else:
             self.upload_audit_file_without_document_service()
-
-    def init_services(self):
-        exceptions = []
-
-        init_methods = [(self.init_api, 'API'), (self.init_database, 'CouchDB')]
-        if self.worker_defaults.get("with_document_service"):
-            init_methods.append((self.init_ds, 'Document Service'))
-
-        # Checking Worker services
-        for method, service in init_methods:
-            result = ('ok', None)
-            try:
-                method()
-            except Exception as e:
-                exceptions.append(e)
-                result = ('failed', e)
-            LOGGER.check('{} - {}'.format(service, result[0]), result[1])
-
-        if exceptions:
-            raise exceptions[0]
-
-    def init_api(self):
-        """
-        Check API availability and set tender_url attribute
-        """
-        api_url = "{resource_api_server}/api/{resource_api_version}/health"
-        if self.debug:
-            response = True
-        else:
-            response = make_request(url=api_url.format(**self.worker_defaults),
-                                    method="get", retry_count=5)
-        if not response:
-            raise Exception("Auction DS can't be reached")
-        else:
-            self.tender_url = urljoin(
-                self.worker_defaults["resource_api_server"],
-                "/api/{0}/{1}/{2}".format(
-                    self.worker_defaults["resource_api_version"],
-                    self.worker_defaults["resource_name"],
-                    self.tender_id
-                )
-            )
-
-    def init_ds(self):
-        """
-        Check Document service availability and set session_ds attribute
-        """
-        ds_config = self.worker_defaults.get("DOCUMENT_SERVICE")
-        resp = request("GET", ds_config.get("url"), timeout=5)
-        if not resp or resp.status_code != 200:
-            raise Exception("Auction DS can't be reached")
-        self.session_ds = RequestsSession()
-
-    def init_database(self):
-        """
-        Check CouchDB availability and set db attribute
-        """
-        server, db = self.worker_defaults.get("COUCH_DATABASE").rsplit('/', 1)
-        server = Server(server, session=Session(retry_delays=range(10)))
-        database = server[db] if db in server else server.create(db)
-        self.db = database
