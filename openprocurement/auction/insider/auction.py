@@ -32,22 +32,9 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
     update_auction_document, lock_bids, normalize_audit
-from openprocurement.auction.utils import delete_mapping
+from openprocurement.auction.utils import delete_mapping, check
 
 logging.addLevelName(25, 'CHECK')
-
-
-def check(self, msg, exc=None, *args, **kwargs):
-    """
-    Log 'msg % args' with severity 'CHECK'.
-
-    If exc parameter is not None, will log exc message with severity 'ERROR'.
-    """
-    self.log(25, msg)
-    if exc:
-        self.error(exc, exc_info=True)
-
-
 logging.Logger.check = check
 
 LOGGER = logging.getLogger('Auction Worker Insider')
