@@ -19,7 +19,8 @@ ENTRY_POINTS = {
         'auction_insider = openprocurement.auction.insider.cli:main',
     ],
     'openprocurement.auction.auctions': [
-        'dgfInsider = openprocurement.auction.insider.includeme:includeme'
+        'dgfInsider = openprocurement.auction.insider.includeme:dgfInsider'
+        'sellout.insider = openprocurement.auction.insider.includeme:sellout_insider'
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.insider.tests.functional.main:includeme'
