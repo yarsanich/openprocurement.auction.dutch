@@ -6,7 +6,6 @@ from openprocurement.auction.interfaces import (
     IFeedItem, IAuctionDatabridge, IAuctionsChronograph, IAuctionsServer
 )
 
-from openprocurement.auction.insider.constants import PROCUREMENT_METHOD_TYPE
 from openprocurement.auction.insider.interfaces import IDutchAuction
 from openprocurement.auction.insider.planning import InsiderPlanning
 from openprocurement.auction.insider.views import includeme as _includeme
@@ -15,16 +14,11 @@ from openprocurement.auction.insider.views import includeme as _includeme
 LOGGER = logging.getLogger(__name__)
 
 
-def dgfInsider(components):
-    includeme(components, PROCUREMENT_METHOD_TYPE)
-    LOGGER.info("Included dgfInsider plugin",
-                extra={'MESSAGE_ID': 'included_plugin'})
-
-
-def sellout_insider(components):
-    includeme(components, 'sellout.insider')
-    LOGGER.info("Included sellout.insider plugin",
-                extra={'MESSAGE_ID': 'included_plugin'})
+def dutch(components, procurement_method_types):
+    for procurement_method_type in procurement_method_types:
+        includeme(components, procurement_method_type)
+    server = components.queryUtility(IAuctionsServer)
+    _includeme(server)
 
 
 def includeme(components, procurement_method_type):
@@ -35,5 +29,5 @@ def includeme(components, procurement_method_type):
     components.registerAdapter(RunDispatcher,
                                (IAuctionsChronograph, IFeedItem),
                                IDutchAuction)
-    server = components.queryUtility(IAuctionsServer)
-    _includeme(server)
+    LOGGER.info("Included %s plugin" % procurement_method_type,
+                extra={'MESSAGE_ID': 'included_plugin'})
