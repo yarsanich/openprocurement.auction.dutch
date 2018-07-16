@@ -14,9 +14,8 @@ from openprocurement.auction.utils import (
 from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
 from openprocurement.auction.worker.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import (
-    DUTCH, PERCENT_FROM_INITIAL_VALUE,
-    PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID,
-    END
+    DUTCH, PERCENT_FROM_INITIAL_VALUE, END, BESTBID,
+    PRESEALEDBID, SEALEDBID, PREBESTBID, PRESTARTED
 )
 from openprocurement.auction.insider.constants import (
     MULTILINGUAL_FIELDS,
@@ -149,7 +148,7 @@ def prepare_audit(auction):
         "id": auction.auction_doc_id,
         "auctionId": auction_data["data"].get("auctionID", ""),
         "auction_id": auction.tender_id,
-        "auctionParameters": auction.parameters,
+        "auctionParameters": auction_data['data']['auctionParameters'],
         "items": auction_data["data"].get("items", []),
         "results": prepare_timeline_stage(),
         "timeline": {
@@ -179,6 +178,7 @@ def get_sealed_bid_winner(auction_document):
                 if bid.get('sealedbid_winner', False)][0]
     except IndexError:
         return {}
+
 
 @contextmanager
 def update_auction_document(auction):
@@ -365,3 +365,194 @@ def normalize_document(document):
                 normalized[field][index]['amount'] = str(stage['amount'])
     return normalized
 
+
+def get_fast_forward_data(auction, submission_method_details):
+    """
+    :param auction: insider auction instance
+    :type auction: openprocurement.auction.insider.auction.Auction
+    :param submission_method_details: string with parameters for fast forward
+    mode.
+    :type submission_method_details: str
+    :return: dictionary with parsed bids from submission_method_details
+    :rtype: dict
+    """
+    fast_forward_data = submission_method_details.split(',')
+    results = {}
+    for phase in [DUTCH, SEALEDBID, BESTBID]:
+        bid = next(
+            (bid for bid in fast_forward_data if bid.startswith(phase)), None
+        )
+        if bid:
+            results[phase] = prepare_bid(auction, bid, phase)
+        else:
+            break
+    return results
+
+
+def prepare_bid(auction, bid, phase):
+    """
+    Creating bid object for particular auction phase
+    :param auction: insider auction instance
+    :param bid: part of submissionMethodDetails string to parse
+    :param phase: phase of auction
+    :type auction: openprocurement.auction.insider.auction.Auction
+    :type bid: str
+    :type phase: str
+    :return: dictionary with bid data
+    :rtype: dict
+    """
+    def _get_bidder_id_by_number(bidder_number):
+        return next((
+            bidder_id for bidder_id, number in auction.mapping.items()
+            if number == int(bidder_number)
+        ), None)
+
+    def _prepare_bid(bid_data, stage):
+        bidder_number, amount = bid_data.split(':')
+        bidder_id = _get_bidder_id_by_number(bidder_number)
+        return {
+            'amount': Decimal(amount),
+            'time': stage['start'],
+            'bidder_id': bidder_id
+        }
+
+    _, bid_data = bid.split('=')
+    stages = auction.auction_document['stages']
+
+    if phase == DUTCH:
+        bidder_number, turn = bid_data.split(':')
+        bidder_id = _get_bidder_id_by_number(bidder_number)
+        stage_index = int(turn) + 1
+        stage = stages[stage_index]
+        return {
+            'amount': stage['amount'],
+            'time': stage['start'],
+            'bidder_id': bidder_id,
+            'current_stage': stage_index
+        }
+
+    if phase == SEALEDBID:
+        sealed_bids = bid_data.split('/')
+        results = []
+        for bid in sealed_bids:
+            results.append(_prepare_bid(bid, stages[-4]))
+        return results
+
+    if phase == BESTBID:
+        return _prepare_bid(bid_data, stages[-2])
+
+
+def update_stage_for_phase(auction, phase):
+    """
+    Setting passed phase of auction as current. Setting stage of passed phase
+    as current. Finding stage of passed phase and updating it's 'time' field
+    with value of 'start' field (needed for fast-forward mode).
+
+    :param auction: instance of insider auction worker
+    :type auction: openprocurement.auction.insider.auction.Auction
+    :param phase: one of auction phases
+    :type phase: str
+    :return: ``None``
+    """
+    auction.auction_document['current_phase'] = phase
+    index, stage = next(
+        (index, stage) for index, stage in enumerate(
+            auction.auction_document['stages']
+        ) if stage['type'] == phase
+    )
+    stage.update({'time': stage['start']})
+    auction.auction_document['current_stage'] = index
+
+
+def run_auction_fast_forward(auction, ff_data):
+    """
+    Running auction in a fast forward mode, using bids from ff_data dictionary.
+    :param auction: insider auction instance
+    :param ff_data: bids data
+    :type auction: openprocurement.auction.insider.auction.Auction
+    :type ff_data: dict
+    :return: ``None``
+    """
+    stages = auction.auction_document['stages']
+
+    # pre-started phase
+    auction.auction_document['current_phase'] = PRESTARTED
+    auction.auction_document["current_stage"] = 0
+
+    # dutch phase
+    auction.auction_document['current_phase'] = DUTCH
+    auction.auction_document['current_stage'] = 1
+    stage_index = auction.auction_document['current_stage']
+
+    bid = ff_data.get('dutch')
+    if not bid:
+        current_stage = len(stages) - 1
+    else:
+        current_stage = bid.pop('current_stage')
+
+    while auction.auction_document['current_stage'] < current_stage \
+            and stages[stage_index]['type'].startswith(DUTCH):
+        stages[stage_index].update({
+            'passed': True
+        })
+        run_time = stages[stage_index]['start']
+        stages[stage_index]['time'] = run_time
+        auction.auction_document['current_stage'] += 1
+        stage_index = auction.auction_document['current_stage']
+
+    if bid:
+        stages[stage_index].update({
+            'passed': True,
+            'time': stages[stage_index]['start']
+        })
+
+        # prepare dutch phase results
+        bid['bidder_name'] = auction.mapping.get(bid['bidder_id'], False)
+        bid['dutch_winner'] = True
+
+        auction._bids_data[bid['bidder_id']].append(bid)
+        result = prepare_results_stage(**bid)
+        stages[current_stage].update(result)
+        auction.auction_document['results'].append(result)
+
+    # pre-sealedbid phase
+    update_stage_for_phase(auction, PRESEALEDBID)
+
+    # sealedbid phase
+    update_stage_for_phase(auction, SEALEDBID)
+
+    # prepare sealedbid phase results
+    sealedbid_bids = ff_data.get('sealedbid')
+    if sealedbid_bids:
+
+        for bid in sealedbid_bids:
+            auction._bids_data[bid['bidder_id']].append(bid)
+
+        with update_auction_document(auction):
+            auction.auction_document['results'] = prepare_auction_results(
+                auction, auction._bids_data
+            )
+        auction.find_sealedbid_winner()
+
+    # pre-bestbid phase
+    update_stage_for_phase(auction, PREBESTBID)
+
+    # bestbid stage
+    update_stage_for_phase(auction, BESTBID)
+
+    # prepare bestbid phase results
+    bid = ff_data.get('bestbid')
+    if bid:
+        bid['dutch_winner'] = True
+        if bid['amount'] == -1:
+            # Get bid from dutch phase
+            bid['amount'] = auction._bids_data[bid['bidder_id']][0]['amount']
+        auction._bids_data[bid['bidder_id']].append(bid)
+
+        with update_auction_document(auction):
+            auction.auction_document['results'] = prepare_auction_results(
+                auction, auction._bids_data
+            )
+
+    # announcement phase
+    update_stage_for_phase(auction, END)
