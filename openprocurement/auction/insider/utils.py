@@ -556,3 +556,6 @@ def run_auction_fast_forward(auction, ff_data):
 
     # announcement phase
     update_stage_for_phase(auction, END)
+
+    # set marker for chronograph
+    auction.auction_document['submissionMethodDetails'] = 'fastforward'

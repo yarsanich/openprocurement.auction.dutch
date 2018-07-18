@@ -371,7 +371,6 @@ class Auction(DutchDBServiceMixin,
             elif stage['type'] == 'announcement':
                 self.audit['timeline'][BESTBID]['timeline']['end'] = stage['time']
         # Add sealedbid and bestbid bids
-
         results = deepcopy(self.auction_document['results'])
         for bid in results:
             bid.pop('label')
@@ -389,4 +388,6 @@ class Auction(DutchDBServiceMixin,
         )
         LOGGER.info(self.audit)
         if self.put_auction_data():
+            if self.auction_document.get('submissionMethodDetails') == 'fastforward':
+                del self.auction_document['submissionMethodDetails']
             self.save_auction_document()
