@@ -343,9 +343,13 @@ class Auction(DutchDBServiceMixin,
         self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['start']
         for index, stage in enumerate(self.auction_document["stages"]):
             if stage.get('dutch_winner', False):
+                name = self.mapping.get(
+                    stage['bidder_id'],
+                    int(stage['label']['en'][-1])
+                )  # getting name of bidder from mapping if exists else from label
                 bid = {
                     'bidder_id': stage['bidder_id'],
-                    'name': int(stage['label']['en'][-1]),  # getting name of bidder from label
+                    'name': name,
                     'time': stage['time'],
                     'amount': stage['amount'],
                     'dutch_winner': True
@@ -388,6 +392,4 @@ class Auction(DutchDBServiceMixin,
         )
         LOGGER.info(self.audit)
         if self.put_auction_data():
-            if self.auction_document.get('submissionMethodDetails') == 'fastforward':
-                del self.auction_document['submissionMethodDetails']
             self.save_auction_document()

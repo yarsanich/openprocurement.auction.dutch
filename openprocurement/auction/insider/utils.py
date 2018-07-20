@@ -422,7 +422,7 @@ def prepare_bid(auction, bid, phase):
     if phase == DUTCH:
         bidder_number, turn = bid_data.split(':')
         bidder_id = _get_bidder_id_by_number(bidder_number)
-        stage_index = int(turn) + 1
+        stage_index = int(turn)
         stage = stages[stage_index]
         return {
             'amount': stage['amount'],
@@ -556,6 +556,3 @@ def run_auction_fast_forward(auction, ff_data):
 
     # announcement phase
     update_stage_for_phase(auction, END)
-
-    # set marker for chronograph
-    auction.auction_document['submissionMethodDetails'] = 'fastforward'

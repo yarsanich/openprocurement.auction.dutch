@@ -121,10 +121,14 @@ class DutchDBServiceMixin(DBServiceMixin):
             )
 
             submissionMethodDetails = self._auction_data['data'].get('submissionMethodDetails', '')
-            if submissionMethodDetails and submissionMethodDetails.startswith('fastforward'):
-                ff_data = utils.get_fast_forward_data(self, submissionMethodDetails)
-                utils.run_auction_fast_forward(self, ff_data)
-
+            if submissionMethodDetails and submissionMethodDetails.startswith('fast-forward'):
+                if self._auction_data['data'].get('status') == 'active.auction':
+                    self.auction_document['submissionMethodDetails'] = submissionMethodDetails
+                    ff_data = utils.get_fast_forward_data(self, submissionMethodDetails)
+                    utils.run_auction_fast_forward(self, ff_data)
+                    self.save_auction_document()
+                    self.post_audit()
+                return
         else:
             self.auction_document = utils.prepare_auction_document(self)
         self.save_auction_document()

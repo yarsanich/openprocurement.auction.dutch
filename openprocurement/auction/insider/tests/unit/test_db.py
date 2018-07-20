@@ -185,12 +185,15 @@ def test_prepare_auction_document(auction, mocker):
 
     mock_get_fastforward_data = mocker.patch('openprocurement.auction.insider.utils.get_fast_forward_data')
     mock_run_auction_fast_forward = mocker.patch('openprocurement.auction.insider.utils.run_auction_fast_forward')
-    auction._auction_data['data']['submissionMethodDetails'] = 'fastforward'
+    mock_post_audit = mocker.patch.object(auction, 'post_audit', autospec=True)
+    auction._auction_data['data']['submissionMethodDetails'] = 'fast-forward'
+    auction._auction_data['data']['status'] = 'active.auction'
 
     auction.prepare_auction_document()
 
     assert mock_get_fastforward_data.call_count == 1
     assert mock_run_auction_fast_forward.call_count == 1
+    assert mock_post_audit.call_count == 1
 
     del auction._auction_data['data']['submissionMethodDetails']
     auction.worker_defaults['sandbox_mode'] = False

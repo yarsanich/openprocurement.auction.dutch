@@ -770,19 +770,19 @@ def test_prepare_auction_document_100_steps(auction):
 @pytest.mark.parametrize(
     'submission_method_details, expected',
     [
-        ('fastforward,dutch=1:6,sealedbid=3:32000/2:34567,bestbid=1:38254', {
+        ('fast-forward,dutch=1:6,sealedbid=3:32000/2:34567,bestbid=1:38254', {
             DUTCH: 'prepared_bid',
             SEALEDBID: 'prepared_bid',
             BESTBID: 'prepared_bid'
         }),
-        ('fastforward,dutch=1:6,sealedbid=3:32000/2:34567', {
+        ('fast-forward,dutch=1:6,sealedbid=3:32000/2:34567', {
             DUTCH: 'prepared_bid',
             SEALEDBID: 'prepared_bid',
         }),
-        ('fastforward,dutch=1:6', {
+        ('fast-forward,dutch=1:6', {
             DUTCH: 'prepared_bid',
         }),
-        ('fastforward', {}),
+        ('fast-forward', {}),
     ], ids=('dutch sealedbid bestbid', 'dutch sealedbid', 'dutch', 'no bids')
 )
 def test_get_fast_forward_data(auction, mocker, submission_method_details, expected):
@@ -799,7 +799,7 @@ def test_get_fast_forward_data(auction, mocker, submission_method_details, expec
             'amount': Decimal(20000),
             'time': 'test-time',
             'bidder_id': 'bidder_id_1',
-            'current_stage': 7
+            'current_stage': 6
         }),
         ('sealedbid=3:32000/2:34567', SEALEDBID, [{
             'amount': Decimal(32000),
@@ -821,7 +821,7 @@ def test_get_fast_forward_data(auction, mocker, submission_method_details, expec
 )
 def test_prepare_bid(auction, mocker, bid, phase, expected):
     auction.auction_document = {'stages': [{} for _ in range(16)]}
-    auction.auction_document['stages'][7] = {
+    auction.auction_document['stages'][6] = {
         'amount': Decimal(20000),
         'start': 'test-time'
     }
@@ -863,16 +863,16 @@ def test_run_auction_fast_forward(auction, mocker):
     mocker.patch.object(auction, 'get_auction_info', autospec=True)
     mock_get_auction_document.return_value = {'_rev': 'test_rev'}
     auction.startDate = datetime(2017, 12, 12)
+    auction._auction_data['data']['status'] = 'active.auction'
 
     # sandbox_mode == True
     auction.prepare_auction_document()
     auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
 
-    ff_data = get_fast_forward_data(auction, 'fastforward,dutch=1:6,sealedbid=3:32000/2:34567,bestbid=1:38254')
+    ff_data = get_fast_forward_data(auction, 'fast-forward,dutch=1:6,sealedbid=3:32000/2:34567,bestbid=1:38254')
     run_auction_fast_forward(auction, ff_data)
 
     assert auction.auction_document['current_stage'] == 15
-    assert 'dutch_winner' in auction.auction_document['stages'][7]
+    assert 'dutch_winner' in auction.auction_document['stages'][6]
     assert 'sealedbid_winner' in auction.auction_document['stages'][12]
     assert auction.auction_document['stages'][12]['amount'] == Decimal('34567')
-    assert auction.auction_document['submissionMethodDetails'] == 'fastforward'
