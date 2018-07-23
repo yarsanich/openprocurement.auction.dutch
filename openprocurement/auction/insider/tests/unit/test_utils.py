@@ -17,7 +17,7 @@ from openprocurement.auction.insider.utils import (
     announce_results_data, post_results_data, update_auction_document,
     lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner,
     get_fast_forward_data, prepare_bid,
-    update_stage_for_phase, run_auction_fast_forward)
+    update_stage_for_phase, run_auction_fast_forward, validate_fast_forward_data)
 
 
 @pytest.mark.parametrize(
@@ -787,6 +787,7 @@ def test_prepare_auction_document_100_steps(auction):
 )
 def test_get_fast_forward_data(auction, mocker, submission_method_details, expected):
     mock_prepare_bid = mocker.patch('openprocurement.auction.insider.utils.prepare_bid', autospec=True)
+    mocker.patch('openprocurement.auction.insider.utils.validate_fast_forward_data', autospec=True)
     mock_prepare_bid.return_value = 'prepared_bid'
     result = get_fast_forward_data(auction, submission_method_details)
     assert result == expected
@@ -869,10 +870,88 @@ def test_run_auction_fast_forward(auction, mocker):
     auction.prepare_auction_document()
     auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
 
-    ff_data = get_fast_forward_data(auction, 'fast-forward,dutch=1:6,sealedbid=3:32000/2:34567,bestbid=1:38254')
+    ff_data = get_fast_forward_data(auction, 'fast-forward,dutch=1:6,sealedbid=3:34000/2:36567,bestbid=1:38254')
     run_auction_fast_forward(auction, ff_data)
 
     assert auction.auction_document['current_stage'] == 15
     assert 'dutch_winner' in auction.auction_document['stages'][6]
     assert 'sealedbid_winner' in auction.auction_document['stages'][12]
-    assert auction.auction_document['stages'][12]['amount'] == Decimal('34567')
+    assert auction.auction_document['stages'][12]['amount'] == Decimal('36567')
+
+
+def test_validate_fast_forward_data(auction, mocker, logger):
+    mocker.patch.object(auction, 'generate_request_id', autospec=True)
+    mock_get_auction_document = mocker.patch.object(auction, 'get_auction_document', autospec=True)
+    mock_get_auction_document.return_value = True
+    mocker.patch.object(auction, 'save_auction_document', autospec=True)
+    mocker.patch.object(auction, 'get_auction_info', autospec=True)
+    mock_get_auction_document.return_value = {'_rev': 'test_rev'}
+    auction.startDate = datetime(2017, 12, 12)
+    auction._auction_data['data']['status'] = 'active.auction'
+
+    # sandbox_mode == True
+    auction.prepare_auction_document()
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
+
+    # sealedbid amount lower than dutch
+    results = {
+        'dutch': {'amount': Decimal('31850.00'),
+                    'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+        'sealedbid': [{'amount': Decimal('31000'),
+                       'bidder_id': u'97c0351c32ea45aead73a784fb266be7'}]
+    }
+
+    validate_fast_forward_data(results, auction)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert log_strings[-2] == 'Wrong fast-forward data for sealedbid phase. Skipping.'
+    assert 'sealedbid' not in results
+
+    # sealedbid bidder_id is equal to dutch bidder_id
+    results = {
+        'dutch': {'amount': Decimal('31850.00'),
+                  'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+        'sealedbid': [{'amount': Decimal('32000'),
+                       'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'}]
+    }
+
+    validate_fast_forward_data(results, auction)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert log_strings[-2] == 'Wrong fast-forward data for sealedbid phase. Skipping.'
+    assert 'sealedbid' not in results
+
+    # bestbid amount not enough greater than sealedbid amount
+    results = {
+        'dutch': {'amount': Decimal('31850.00'),
+                  'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+        'sealedbid': [{'amount': Decimal('31000'),
+                       'bidder_id': u'97c0351c32ea45aead73a784fb266be7'}],
+        'bestbid': {'amount': Decimal('31100.00'),
+                    'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+    }
+
+    validate_fast_forward_data(results, auction)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert log_strings[-2] == 'Wrong fast-forward data for bestbid phase. Skipping.'
+    assert 'sealedbid' not in results
+    assert 'bestbid' not in results
+
+    # bestbid amount not enough greater than sealedbid amount
+    results = {
+        'dutch': {'amount': Decimal('31850.00'),
+                  'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+        'sealedbid': [{'amount': Decimal('31000'),
+                       'bidder_id': u'97c0351c32ea45aead73a784fb266be7'}],
+        'bestbid': {'amount': Decimal('31100.00'),
+                    'bidder_id': u'97c0351c32ea45aead73a784fb266be7'},
+    }
+
+    # bestbid bidder_id is not equal to dutch bidder_id
+    validate_fast_forward_data(results, auction)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert log_strings[-2] == 'Wrong fast-forward data for bestbid phase. Skipping.'
+    assert 'sealedbid' not in results
+    assert 'bestbid' not in results

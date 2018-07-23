@@ -383,13 +383,46 @@ def get_fast_forward_data(auction, submission_method_details):
             (bid for bid in fast_forward_data if bid.startswith(phase)), None
         )
         if bid:
-            results[phase] = prepare_bid(auction, bid, phase)
+            try:
+                results[phase] = prepare_bid(auction, bid, phase)
+            except Exception as e:
+                LOGGER.error('%s occurred during parsing %s phase' % (e, phase))
+                break
         else:
             break
+    validate_fast_forward_data(results, auction)
     return results
 
 
-def prepare_bid(auction, bid, phase):
+def validate_fast_forward_data(results, auction):
+
+    if results.get(SEALEDBID):
+        for bid in results[SEALEDBID]:
+            if bid['amount'] <= results[DUTCH]['amount'] or \
+               bid['bidder_id'] == results[DUTCH]['bidder_id']:
+                LOGGER.warning('Wrong fast-forward data'
+                               ' for %s phase. Skipping.' % SEALEDBID)
+                results.pop(SEALEDBID)
+                break
+        else:
+            sealed_bid_amount = max(
+                map(lambda bid: bid['amount'], results[SEALEDBID])
+            )
+            lowering_step_amount = calculate_next_stage_amount(
+                auction, PERCENT_FROM_INITIAL_VALUE - 2
+            )
+            minimal_best_bid_amount = sealed_bid_amount + lowering_step_amount
+
+    if results.get(BESTBID):
+        if not results.get(SEALEDBID) or \
+               results[BESTBID]['bidder_id'] != results[DUTCH]['bidder_id'] or \
+               results[BESTBID]['amount'] < minimal_best_bid_amount:
+            LOGGER.warning('Wrong fast-forward data'
+                           ' for %s phase. Skipping.' % BESTBID)
+            results.pop(BESTBID)
+
+
+def prepare_bid(auction, bid, phase, results=None):
     """
     Creating bid object for particular auction phase
     :param auction: insider auction instance
