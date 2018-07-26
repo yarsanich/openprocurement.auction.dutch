@@ -384,12 +384,15 @@ def get_fast_forward_data(auction, submission_method_details):
         )
         if bid:
             try:
-                results[phase] = prepare_bid(auction, bid, phase)
+                result = prepare_bid(auction, bid, phase)
             except Exception as e:
                 LOGGER.error('%s occurred during parsing %s phase' % (e, phase))
                 break
-        else:
-            break
+            else:
+                if result:
+                    results[phase] = result
+                    continue
+        break
     validate_fast_forward_data(results, auction)
     return results
 
@@ -456,13 +459,18 @@ def prepare_bid(auction, bid, phase, results=None):
         bidder_number, turn = bid_data.split(':')
         bidder_id = _get_bidder_id_by_number(bidder_number)
         stage_index = int(turn)
-        stage = stages[stage_index]
-        return {
-            'amount': stage['amount'],
-            'time': stage['start'],
-            'bidder_id': bidder_id,
-            'current_stage': stage_index
-        }
+        if 0 <= stage_index < len(stages) and \
+           stages[stage_index]['type'].startswith('dutch'):
+            stage = stages[stage_index]
+            return {
+                'amount': stage['amount'],
+                'time': stage['start'],
+                'bidder_id': bidder_id,
+                'current_stage': stage_index
+            }
+        LOGGER.warning('Wrong fast-forward data'
+                       ' for %s phase. Skipping.' % DUTCH)
+        return
 
     if phase == SEALEDBID:
         sealed_bids = bid_data.split('/')
@@ -507,10 +515,6 @@ def run_auction_fast_forward(auction, ff_data):
     :return: ``None``
     """
     stages = auction.auction_document['stages']
-
-    # pre-started phase
-    auction.auction_document['current_phase'] = PRESTARTED
-    auction.auction_document["current_stage"] = 0
 
     # dutch phase
     auction.auction_document['current_phase'] = DUTCH

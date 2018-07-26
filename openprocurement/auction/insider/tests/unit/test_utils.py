@@ -824,6 +824,7 @@ def test_prepare_bid(auction, mocker, bid, phase, expected):
     auction.auction_document = {'stages': [{} for _ in range(16)]}
     auction.auction_document['stages'][6] = {
         'amount': Decimal(20000),
+        'type': 'dutch_6',
         'start': 'test-time'
     }
     auction.auction_document['stages'][12] = {
@@ -834,6 +835,32 @@ def test_prepare_bid(auction, mocker, bid, phase, expected):
     }
     auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
     assert prepare_bid(auction, bid, phase) == expected
+
+
+@pytest.mark.parametrize(
+    'bid, phase, expected',
+    [
+        ('dutch=1:20', DUTCH, None),
+        ('dutch=1:14', DUTCH, None),
+    ], ids=('stage out of range', 'wrong phase stage')
+)
+def test_prepare_dutch_bid_fail(auction, logger, bid, phase, expected):
+    auction.auction_document = {'stages': [{} for _ in range(16)]}
+    auction.auction_document['stages'][6] = {
+        'amount': Decimal(20000),
+        'type': 'dutch_6',
+        'start': 'test-time'
+    }
+    auction.auction_document['stages'][14] = {
+        'type': 'sealedbid', 'start': 'test-time'
+    }
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
+
+    result = prepare_bid(auction, bid, phase)
+    log_strings = logger.log_capture_string.getvalue().split('\n')
+
+    assert result == expected
+    assert log_strings[-2] == 'Wrong fast-forward data for dutch phase. Skipping.'
 
 
 def test_update_stage_for_phase(auction):
@@ -896,7 +923,7 @@ def test_validate_fast_forward_data(auction, mocker, logger):
     # sealedbid amount lower than dutch
     results = {
         'dutch': {'amount': Decimal('31850.00'),
-                    'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
+                  'bidder_id': u'cbe99b5bffb344b1bbcd9df48a98d0e9'},
         'sealedbid': [{'amount': Decimal('31000'),
                        'bidder_id': u'97c0351c32ea45aead73a784fb266be7'}]
     }
