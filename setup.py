@@ -5,8 +5,7 @@ VERSION = '1.0.2a11'
 INSTALL_REQUIRES = [
     'setuptools',
     'simplejson',
-    'openprocurement.auction',
-    'openprocurement.auction.worker'
+    'openprocurement.auction'
 ]
 EXTRAS_REQUIRE = {
     'test': [
