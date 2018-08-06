@@ -1,21 +1,33 @@
+# -*- coding: utf-8 -*-
+import logging
+
 from openprocurement.auction.core import RunDispatcher
-from openprocurement.auction.insider.planning import InsiderPlanning
-from openprocurement.auction.interfaces import IAuctionsServer
-from openprocurement.auction.insider.interfaces import IDutchAuction
-from openprocurement.auction.insider.views import includeme as _includeme
-from openprocurement.auction.insider.constants import PROCUREMENT_METHOD_TYPE
-
 from openprocurement.auction.interfaces import (
-    IFeedItem, IAuctionDatabridge, IAuctionsChronograph)
+    IFeedItem, IAuctionDatabridge, IAuctionsChronograph, IAuctionsServer
+)
+
+from openprocurement.auction.insider.interfaces import IDutchAuction
+from openprocurement.auction.insider.planning import InsiderPlanning
+from openprocurement.auction.insider.views import includeme as _includeme
 
 
-def includeme(components):
+LOGGER = logging.getLogger(__name__)
+
+
+def dutch(components, procurement_method_types):
+    for procurement_method_type in procurement_method_types:
+        includeme(components, procurement_method_type)
+    server = components.queryUtility(IAuctionsServer)
+    _includeme(server)
+
+
+def includeme(components, procurement_method_type):
     components.add_auction(IDutchAuction,
-                           procurementMethodType=PROCUREMENT_METHOD_TYPE)
+                           procurementMethodType=procurement_method_type)
     components.registerAdapter(InsiderPlanning, (IAuctionDatabridge, IFeedItem),
                                IDutchAuction)
     components.registerAdapter(RunDispatcher,
                                (IAuctionsChronograph, IFeedItem),
                                IDutchAuction)
-    server = components.queryUtility(IAuctionsServer)
-    _includeme(server)
+    LOGGER.info("Included %s plugin" % procurement_method_type,
+                extra={'MESSAGE_ID': 'included_plugin'})
