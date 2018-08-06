@@ -11,8 +11,8 @@ from openprocurement.auction.utils import (
     make_request, get_tender_data,
     sorting_by_amount
 )
-from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
-from openprocurement.auction.worker.utils import prepare_service_stage
+from openprocurement.auction.insider.journal import AUCTION_WORKER_API_APPROVED_DATA
+from openprocurement.auction.worker_core.utils import prepare_service_stage
 from openprocurement.auction.insider.constants import (
     DUTCH, PERCENT_FROM_INITIAL_VALUE,
     PRESEALEDBID, SEALEDBID, PREBESTBID, BESTBID,
