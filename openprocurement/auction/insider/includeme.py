@@ -14,9 +14,12 @@ from openprocurement.auction.insider.views import includeme as _includeme
 LOGGER = logging.getLogger(__name__)
 
 
-def dutch(components, procurement_method_types):
+def dutch_components(components, procurement_method_types):
     for procurement_method_type in procurement_method_types:
         includeme(components, procurement_method_type)
+
+
+def dutch_routes(components):
     server = components.queryUtility(IAuctionsServer)
     _includeme(server)
 

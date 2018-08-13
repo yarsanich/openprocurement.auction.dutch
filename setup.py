@@ -18,8 +18,11 @@ ENTRY_POINTS = {
     'console_scripts': [
         'auction_insider = openprocurement.auction.insider.cli:main',
     ],
-    'openprocurement.auction.auctions': [
-        'dutch = openprocurement.auction.insider.includeme:dutch'
+    'openprocurement.auction.components': [
+        'dutch = openprocurement.auction.insider.includeme:dutch_components'
+    ],
+    'openprocurement.auction.routes': [
+        'dutch = openprocurement.auction.insider.includeme:dutch_routes'
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.insider.tests.functional.main:includeme'
