@@ -241,6 +241,13 @@ class DutchAuctionPhase(object):
 
     def next_stage(self, stage):
 
+        stage_index = self.auction_document['current_stage']
+        current_stage_type = self.auction_document['stages'][stage_index]['type']
+
+        if not current_stage_type.startswith((DUTCH, 'pause')):
+            LOGGER.info('Auction phase has already changed to {}'.format(current_stage_type))
+            return
+
         with utils.lock_bids(self), utils.update_auction_document(self):
             run_time = utils.update_stage(self)
             stage_index = self.auction_document['current_stage']
@@ -339,7 +346,7 @@ class DutchAuctionPhase(object):
                 'passed': True
             })
 
-        spawn(self.clean_up_preplanned_jobs)
+        self.clean_up_preplanned_jobs()
         if not self.auction_document['results']:
             LOGGER.info("No bids on dutch phase. End auction now.")
             self.end_auction()
