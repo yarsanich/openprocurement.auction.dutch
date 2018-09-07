@@ -2,27 +2,26 @@
 import logging
 from contextlib import contextmanager
 from copy import deepcopy
+from datetime import datetime
 from decimal import Decimal, ROUND_HALF_UP
-from datetime import datetime, timedelta
+from random import randint
 
 from dateutil.tz import tzlocal
+
 from openprocurement.auction.utils import (
     get_latest_bid_for_bidder,
     make_request, get_tender_data,
     sorting_by_amount
 )
-from openprocurement.auction.worker.journal import AUCTION_WORKER_API_APPROVED_DATA
-from openprocurement.auction.worker.utils import prepare_service_stage
+from openprocurement.auction.worker_core.utils import prepare_service_stage
+
+from openprocurement.auction.insider.journal import AUCTION_WORKER_API_APPROVED_DATA
 from openprocurement.auction.insider.constants import (
     DUTCH, PERCENT_FROM_INITIAL_VALUE, END, BESTBID,
-    PRESEALEDBID, SEALEDBID, PREBESTBID, PRESTARTED
-)
-from openprocurement.auction.insider.constants import (
-    MULTILINGUAL_FIELDS,
-    ADDITIONAL_LANGUAGES, SEALEDBID_TIMEDELTA,
+    PRESEALEDBID, SEALEDBID, PREBESTBID, SANDBOX_PARAMETERS,
+    MULTILINGUAL_FIELDS, ADDITIONAL_LANGUAGES, SEALEDBID_TIMEDELTA,
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 )
-
 
 LOGGER = logging.getLogger("Auction Worker Insider")
 
@@ -258,9 +257,9 @@ def prepare_auction_document(auction, fast_forward=False):
             key, ""
         )
     if fast_forward:
-        DUTCH_TIMEDELTA = timedelta(minutes=10)
-        DUTCH_ROUNDS = 10
-        FIRST_PAUSE = timedelta(seconds=10)
+        DUTCH_TIMEDELTA = SANDBOX_PARAMETERS['dutch_timedelta']
+        DUTCH_ROUNDS = SANDBOX_PARAMETERS['dutch_rounds']
+        FIRST_PAUSE = SANDBOX_PARAMETERS['first_pause']
     else:
         from openprocurement.auction.insider.constants import DUTCH_TIMEDELTA,\
             FIRST_PAUSE
@@ -366,16 +365,62 @@ def normalize_document(document):
     return normalized
 
 
+def generate_fastforward_data(auction, option):
+    """
+    :param auction: insider auction instance
+    :type auction: openprocurement.auction.insider.auction.Auction
+    :param option: string, which represent option for preset fast forward data
+                   option1 - for dutch phase
+                   option2 - for dutch and sealedbid phases
+                   option3 - for dutch, sealedbid and bestbid phases
+    :type option: str
+    :return: string with parameters for fast forward mode.
+    :rtype: str
+    """
+    acceptable_options = ['option{}'.format(i) for i
+                          in range(1, SANDBOX_PARAMETERS['ff_options']+1)]
+    if option not in acceptable_options:
+        raise Exception(
+            'fast-forward option should be one of {}'.format(acceptable_options)
+        )
+    option = int(option[-1])
+
+    stages = auction.auction_document['stages']
+    dutch_winner = auction.mapping.values()[0]
+    dutch_round = randint(1, SANDBOX_PARAMETERS['dutch_rounds'])
+    dutch_amount = stages[dutch_round]['amount']
+    result = 'dutch={}:{},'.format(dutch_winner, dutch_round)
+
+    if option > 1:
+        result += 'sealedbid={}:{}/{}:{},'.format(
+            auction.mapping.values()[1], dutch_amount*2,
+            auction.mapping.values()[2], dutch_amount*3,
+        )
+
+    if option > 2:
+        result += 'bestbid={}:{}'.format(dutch_winner, dutch_amount*4)
+
+    return result
+
+
 def get_fast_forward_data(auction, submission_method_details):
     """
     :param auction: insider auction instance
     :type auction: openprocurement.auction.insider.auction.Auction
-    :param submission_method_details: string with parameters for fast forward
-    mode.
+    :param submission_method_details: parameters for fast forward mode
     :type submission_method_details: str
     :return: dictionary with parsed bids from submission_method_details
     :rtype: dict
     """
+    if submission_method_details.startswith('fast-forward,option'):
+        option = submission_method_details.split(',')[1]
+        try:
+            submission_method_details = generate_fastforward_data(auction,
+                                                                  option)
+        except Exception as e:
+            LOGGER.error('%s occurred during applying %s' % (e, option))
+            return
+
     fast_forward_data = submission_method_details.split(',')
     results = {}
     for phase in [DUTCH, SEALEDBID, BESTBID]:

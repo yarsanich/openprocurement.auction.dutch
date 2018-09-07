@@ -9,15 +9,15 @@ from iso8601 import iso8601
 import pytest
 
 from openprocurement.auction.insider.constants import (
-    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA
-)
+    DUTCH, SEALEDBID, BESTBID, DUTCH_TIMEDELTA,
+    SANDBOX_PARAMETERS)
 from openprocurement.auction.insider.tests.data.data import tender_data
 from openprocurement.auction.insider.utils import (
     prepare_results_stage, prepare_timeline_stage, prepare_audit, get_dutch_winner,
     announce_results_data, post_results_data, update_auction_document,
     lock_bids, update_stage, prepare_auction_document, get_sealed_bid_winner,
     get_fast_forward_data, prepare_bid,
-    update_stage_for_phase, run_auction_fast_forward, validate_fast_forward_data)
+    update_stage_for_phase, run_auction_fast_forward, validate_fast_forward_data, generate_fastforward_data)
 
 
 @pytest.mark.parametrize(
@@ -783,13 +783,32 @@ def test_prepare_auction_document_100_steps(auction):
             DUTCH: 'prepared_bid',
         }),
         ('fast-forward', {}),
-    ], ids=('dutch sealedbid bestbid', 'dutch sealedbid', 'dutch', 'no bids')
+        ('fast-forward,option3', {
+            DUTCH: 'prepared_bid',
+            SEALEDBID: 'prepared_bid',
+            BESTBID: 'prepared_bid'
+        }),
+        ('fast-forward,option2', {
+            DUTCH: 'prepared_bid',
+            SEALEDBID: 'prepared_bid',
+        }),
+        ('fast-forward,option1', {
+            DUTCH: 'prepared_bid',
+        }),
+    ], ids=('dutch sealedbid bestbid', 'dutch sealedbid', 'dutch', 'no bids',
+            'option3', 'option2', 'option1')
 )
 def test_get_fast_forward_data(auction, mocker, submission_method_details, expected):
+    auction.auction_document = {
+        'stages': [{'amount': 100} for _ in range(SANDBOX_PARAMETERS['dutch_rounds']+1)]
+    }
+    auction.mapping = mocker.MagicMock()
     mock_prepare_bid = mocker.patch('openprocurement.auction.insider.utils.prepare_bid', autospec=True)
     mocker.patch('openprocurement.auction.insider.utils.validate_fast_forward_data', autospec=True)
     mock_prepare_bid.return_value = 'prepared_bid'
+
     result = get_fast_forward_data(auction, submission_method_details)
+
     assert result == expected
 
 
@@ -904,6 +923,31 @@ def test_run_auction_fast_forward(auction, mocker):
     assert 'dutch_winner' in auction.auction_document['stages'][6]
     assert 'sealedbid_winner' in auction.auction_document['stages'][12]
     assert auction.auction_document['stages'][12]['amount'] == Decimal('36567')
+
+
+@pytest.mark.parametrize(
+    'option, expected',
+    [
+        ('option1', 'dutch=1:10,'),
+        ('option2', 'dutch=1:10,sealedbid=2:200/3:300,'),
+        ('option3', 'dutch=1:10,sealedbid=2:200/3:300,bestbid=1:400'),
+        ('option4', 'fast-forward option should be one of {}'.format(
+                        ['option{}'.format(i) for i
+                         in range(1, SANDBOX_PARAMETERS['ff_options']+1)])),
+    ], ids=('option1', 'option2', 'option3', 'option4')
+)
+def test_generate_fastforward_data(auction, mocker, option, expected):
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
+    auction.auction_document = {
+        'stages': [{'amount': 100} for _ in range(SANDBOX_PARAMETERS['dutch_rounds'] + 1)]
+    }
+    mocked_randint = mocker.patch('openprocurement.auction.insider.utils.randint')
+    mocked_randint.return_value = 10
+
+    try:
+        assert generate_fastforward_data(auction, option) == expected
+    except Exception as e:
+        assert e.message == expected
 
 
 def test_validate_fast_forward_data(auction, mocker, logger):
