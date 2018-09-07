@@ -23,6 +23,7 @@ from openprocurement.auction.insider.constants import (
     BESTBID_TIMEDELTA, END_PHASE_PAUSE
 )
 
+
 LOGGER = logging.getLogger("Auction Worker Insider")
 
 

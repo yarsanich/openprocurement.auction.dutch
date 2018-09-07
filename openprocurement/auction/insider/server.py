@@ -16,7 +16,7 @@ from datetime import datetime
 from pytz import timezone as tz
 from dateutil.tz import tzlocal
 
-from openprocurement.auction.worker.server import _LoggerStream,\
+from openprocurement.auction.worker_core.server import _LoggerStream,\
     AuctionsWSGIHandler
 from openprocurement.auction.insider.forms import BidsForm, form_handler
 from openprocurement.auction.insider.constants import INVALIDATE_GRANT

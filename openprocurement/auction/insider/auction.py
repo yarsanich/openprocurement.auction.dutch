@@ -17,7 +17,7 @@ from dateutil.tz import tzlocal
 from functools import partial
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
-from openprocurement.auction.worker.mixins import RequestIDServiceMixin,\
+from openprocurement.auction.worker_core.mixins import RequestIDServiceMixin,\
     AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\

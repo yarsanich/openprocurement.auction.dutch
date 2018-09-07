@@ -14,9 +14,7 @@ from functools import partial
 from dateutil import parser
 
 from openprocurement.auction.utils import get_tender_data
-from openprocurement.auction.worker.mixins import DBServiceMixin,\
-    PostAuctionServiceMixin
-from openprocurement.auction.worker.journal import\
+from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_API_AUCTION_CANCEL,\
     AUCTION_WORKER_API_AUCTION_NOT_EXIST,\
     AUCTION_WORKER_API_AUCTION_RESULT_NOT_APPROVED as API_NOT_APPROVED,\
@@ -32,7 +30,7 @@ use(encode=partial(simplejson.dumps, use_decimal=True),
     decode=partial(simplejson.loads, use_decimal=True))
 
 
-class DutchDBServiceMixin(DBServiceMixin):
+class DutchDBServiceMixin(object):
     """ Mixin class to work with couchdb"""
     def get_auction_info(self, prepare=False):
         if not self.debug:
@@ -207,7 +205,7 @@ class DutchDBServiceMixin(DBServiceMixin):
             retries -= 1
 
 
-class DutchPostAuctionMixin(PostAuctionServiceMixin):
+class DutchPostAuctionMixin(object):
 
     def put_auction_data(self):
         if not self.debug:
