@@ -11,6 +11,12 @@ AUCTION_PARAMETERS = {
     'type': 'insider',
     'dutchSteps': 80
 }
+SANDBOX_PARAMETERS = {
+    'dutch_timedelta': timedelta(minutes=10),
+    'dutch_rounds': 10,
+    'first_pause': timedelta(seconds=10),
+    'ff_options': 3
+}
 DUTCH_DOWN_STEP = Decimal('0.01')
 MULTILINGUAL_FIELDS = ["title", "description"]
 ADDITIONAL_LANGUAGES = ["ru", "en"]
