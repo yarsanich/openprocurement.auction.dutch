@@ -117,6 +117,17 @@ class DutchDBServiceMixin(object):
                 self,
                 fast_forward=True
             )
+
+            submissionMethodDetails = self._auction_data['data'].get('submissionMethodDetails', '')
+            if submissionMethodDetails and submissionMethodDetails.startswith('fast-forward'):
+                if self._auction_data['data'].get('status') == 'active.auction':
+                    self.auction_document['submissionMethodDetails'] = submissionMethodDetails
+                    ff_data = utils.get_fast_forward_data(self, submissionMethodDetails)
+                    if ff_data:
+                        utils.run_auction_fast_forward(self, ff_data)
+                        self.save_auction_document()
+                        self.post_audit()
+                return
         else:
             self.auction_document = utils.prepare_auction_document(self)
         self.save_auction_document()
@@ -394,6 +405,23 @@ class SealedBidAuctionPhase(object):
         self.audit['timeline'][SEALEDBID]['timeline']['end']\
             = run_time
 
+    def find_sealedbid_winner(self):
+        max_bid = self.auction_document['results'][0]
+        for bid in self.auction_document['results']:
+            if bid['amount'] > max_bid['amount'] or \
+                    (bid['amount'] == max_bid['amount'] and
+                     parser.parse(bid['time']) < parser.parse(max_bid['time'])) or \
+                    max_bid.get('dutch_winner', False):
+                max_bid = bid
+        LOGGER.info("Approved sealedbid winner {bidder_id} with amount {amount}".format(
+            **max_bid
+        ))
+        if not max_bid.get('dutch_winner', False):
+            max_bid['sealedbid_winner'] = True
+        self.auction_document['stages'][self.auction_document['current_stage']].update(
+            max_bid
+        )
+
     def end_sealedbid(self, stage):
         with utils.update_auction_document(self):
             self._end_sealedbid.set()
@@ -409,21 +437,7 @@ class SealedBidAuctionPhase(object):
                 self.end_auction()
                 return
             # find sealedbid winner in auction_document
-            max_bid = self.auction_document['results'][0]
-            for bid in self.auction_document['results']:
-                if bid['amount'] > max_bid['amount'] or \
-                  (bid['amount'] == max_bid['amount'] and
-                   parser.parse(bid['time']) < parser.parse(max_bid['time'])) or \
-                  max_bid.get('dutch_winner', False):
-                    max_bid = bid
-            LOGGER.info("Approved sealedbid winner {bidder_id} with amount {amount}".format(
-                **max_bid
-                ))
-            if not max_bid.get('dutch_winner', False):
-                max_bid['sealedbid_winner'] = True
-            self.auction_document['stages'][self.auction_document['current_stage']].update(
-                max_bid
-            )
+            self.find_sealedbid_winner()
             self.approve_audit_info_on_sealedbid(utils.update_stage(self))
             self.auction_document['current_phase'] = PREBESTBID
 
