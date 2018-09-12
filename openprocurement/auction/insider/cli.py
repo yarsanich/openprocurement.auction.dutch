@@ -13,7 +13,7 @@ from datetime import timedelta
 
 from openprocurement.auction.insider.auction import Auction,\
     SCHEDULER
-from openprocurement.auction.worker import constants as C
+from openprocurement.auction.worker_core import constants as C
 
 
 def main():

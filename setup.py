@@ -1,12 +1,11 @@
 import os
 from setuptools import setup, find_packages
 
-VERSION = '1.0.2a11'
+VERSION = '1.0.2a13'
 INSTALL_REQUIRES = [
     'setuptools',
     'simplejson',
-    'openprocurement.auction',
-    'openprocurement.auction.worker'
+    'openprocurement.auction'
 ]
 EXTRAS_REQUIRE = {
     'test': [
@@ -18,8 +17,8 @@ ENTRY_POINTS = {
     'console_scripts': [
         'auction_insider = openprocurement.auction.insider.cli:main',
     ],
-    'openprocurement.auction.auctions': [
-        'dgfInsider = openprocurement.auction.insider.includeme:includeme'
+    'openprocurement.auction.components': [
+        'dutch = openprocurement.auction.insider.includeme:dutch_components'
     ],
     'openprocurement.auction.robottests': [
         'insider = openprocurement.auction.insider.tests.functional.main:includeme'

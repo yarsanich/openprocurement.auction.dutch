@@ -1,4 +1,6 @@
 import logging
+
+from copy import deepcopy
 from couchdb.json import use
 from requests import Session as RequestsSession
 from collections import defaultdict
@@ -13,7 +15,7 @@ from dateutil.tz import tzlocal
 from functools import partial
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
-from openprocurement.auction.worker.mixins import RequestIDServiceMixin, \
+from openprocurement.auction.worker_core.mixins import RequestIDServiceMixin,\
     AuditServiceMixin, DateTimeServiceMixin, TIMEZONE, InitializeServiceMixin
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
@@ -332,19 +334,24 @@ class Auction(DutchDBServiceMixin,
         self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['start']
         for index, stage in enumerate(self.auction_document["stages"]):
             if stage.get('dutch_winner', False):
+                # getting name of bidder from mapping if exists else from label
+                name = self.mapping.get(stage['bidder_id'], stage.get('label'))
                 bid = {
+                    'bidder_id': stage['bidder_id'],
+                    'bidder_name': name,
                     'time': stage['time'],
                     'amount': stage['amount'],
                     'dutch_winner': True
                 }
                 self.audit['timeline'][DUTCH]['bids'].append(bid)  # Dutch winner
-                break
             if stage["type"].startswith("dutch"):
                 turn = "turn_{}".format(index)
                 self.audit['timeline'][DUTCH][turn] = {
                     'amount': stage['amount'],
                     'time': stage['time'],
                 }
+            if self.audit['timeline'][DUTCH]['bids']:
+                break
         for stage in self.auction_document['stages']:
             if stage['type'] == 'pre-sealedbid':
                 self.audit['timeline'][DUTCH]['timeline']['end'] = stage['time']
@@ -357,10 +364,14 @@ class Auction(DutchDBServiceMixin,
             elif stage['type'] == 'announcement':
                 self.audit['timeline'][BESTBID]['timeline']['end'] = stage['time']
         # Add sealedbid and bestbid bids
-        for bid in self.auction_document['results']:
+        results = deepcopy(self.auction_document['results'])
+        for bid in results:
+            bid.pop('label')
             if bid.get('amount', False) and not bid.get('dutch_winner', False):
+                if bid.get('sealedbid_winner'):
+                    bid.pop('sealedbid_winner')
                 self.audit['timeline'][SEALEDBID]['bids'].append(bid)
-            elif bid.get('dutch_winner', False) and bid['amount'] != self.audit['timeline'][DUTCH]['bids'][0]:
+            elif bid.get('dutch_winner', False) and bid['amount'] != self.audit['timeline'][DUTCH]['bids'][0]['amount']:
                 self.audit['timeline'][BESTBID]['bids'].append(bid)
         self.approve_audit_info_on_announcement()
         self.audit = normalize_audit(self.audit)
@@ -369,7 +380,5 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
         LOGGER.info(self.audit)
-        if self.worker_defaults.get('with_document_service', False):
-            self.upload_audit_file_with_document_service()
-        else:
-            self.upload_audit_file_without_document_service()
+        if self.put_auction_data():
+            self.save_auction_document()
