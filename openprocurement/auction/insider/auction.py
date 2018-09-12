@@ -3,14 +3,12 @@ import logging
 from copy import deepcopy
 from couchdb.json import use
 from requests import Session as RequestsSession
-from urlparse import urljoin
 from collections import defaultdict
 from gevent.queue import Queue
 from gevent.event import Event
 from gevent.lock import BoundedSemaphore
 
 from apscheduler.schedulers.gevent import GeventScheduler
-from couchdb import Database, Session
 from yaml import safe_dump as yaml_dump
 from datetime import datetime
 from dateutil.tz import tzlocal
@@ -18,13 +16,13 @@ from functools import partial
 from openprocurement.auction.executor import AuctionsExecutor
 from openprocurement.auction.insider.server import run_server
 from openprocurement.auction.worker_core.mixins import RequestIDServiceMixin,\
-    AuditServiceMixin, DateTimeServiceMixin, TIMEZONE
+    AuditServiceMixin, DateTimeServiceMixin, TIMEZONE, InitializeServiceMixin
 from openprocurement.auction.insider.mixins import DutchDBServiceMixin,\
     DutchPostAuctionMixin, DutchAuctionPhase, SealedBidAuctionPhase,\
     BestBidAuctionPhase
 from openprocurement.auction.insider.constants import REQUEST_QUEUE_SIZE,\
-    REQUEST_QUEUE_TIMEOUT, DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
-    BESTBID, END, PRESTARTED, BIDS_KEYS_FOR_COPY
+    DUTCH, PRESEALEDBID, SEALEDBID, PREBESTBID,\
+    BESTBID, END, PRESTARTED
 from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_END_AUCTION,\
     AUCTION_WORKER_SERVICE_STOP_AUCTION_WORKER,\
@@ -35,10 +33,11 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
 from openprocurement.auction.insider.utils import prepare_audit,\
-    update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
-    normalize_document
-from openprocurement.auction.utils import delete_mapping, sorting_by_amount
+    update_auction_document, lock_bids, normalize_audit
+from openprocurement.auction.utils import delete_mapping, check
 
+logging.addLevelName(25, 'CHECK')
+logging.Logger.check = check
 
 LOGGER = logging.getLogger('Auction Worker Insider')
 SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
@@ -57,6 +56,7 @@ class Auction(DutchDBServiceMixin,
               AuditServiceMixin,
               DateTimeServiceMixin,
               RequestIDServiceMixin,
+              InitializeServiceMixin,
               DutchAuctionPhase,
               SealedBidAuctionPhase,
               BestBidAuctionPhase,
@@ -69,26 +69,17 @@ class Auction(DutchDBServiceMixin,
         self.tender_id = tender_id
         self.auction_doc_id = tender_id
         self._end_auction_event = Event()
-        self.tender_url = urljoin(
-            worker_defaults["resource_api_server"],
-            '/api/{0}/auctions/{1}'.format(
-                worker_defaults["resource_api_version"], tender_id
-            )
-        )
         if auction_data:
             self.debug = True
             LOGGER.setLevel(logging.DEBUG)
             self._auction_data = auction_data
         else:
             self.debug = False
+        self.worker_defaults = worker_defaults
+        self.init_services()
         self.bids_actions = BoundedSemaphore()
         self.session = RequestsSession()
         self.features = {}  # bw
-        self.worker_defaults = worker_defaults
-        if self.worker_defaults.get('with_document_service', False):
-            self.session_ds = RequestsSession()
-        self.db = Database(str(self.worker_defaults["COUCH_DATABASE"]),
-                           session=Session(retry_delays=range(10)))
         self.audit = {}
         self.retries = 10
         self.mapping = {}
