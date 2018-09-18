@@ -336,8 +336,7 @@ class Auction(DutchDBServiceMixin,
             method that generate audit from auction document from db
         """
         self.generate_request_id()
-        auction_data = self.get_auction_document()
-        self._auction_data = {"data": auction_data}
+        self.get_auction_info()
         self.audit = prepare_audit(self)
         self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
         self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['start']
