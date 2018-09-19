@@ -123,7 +123,7 @@ class DutchDBServiceMixin(object):
                 if self._auction_data['data'].get('status') == 'active.auction':
                     self.auction_document['submissionMethodDetails'] = submissionMethodDetails
                     ff_data = utils.get_fast_forward_data(self, submissionMethodDetails)
-                    if ff_data:
+                    if ff_data is not None:
                         utils.run_auction_fast_forward(self, ff_data)
                         self.save_auction_document()
                         self.post_audit()
