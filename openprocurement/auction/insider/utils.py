@@ -385,21 +385,34 @@ def generate_fastforward_data(auction, option):
             'fast-forward option should be one of {}'.format(acceptable_options)
         )
     option = int(option[-1])
-
+    result = ''
+    if not auction.mapping.values():
+        LOGGER.warning('%s and further phases are skipped '
+                       'because of not enough bidders' % DUTCH)
+        return result
     stages = auction.auction_document['stages']
     dutch_winner = auction.mapping.values()[0]
     dutch_round = randint(1, SANDBOX_PARAMETERS['dutch_rounds'])
     dutch_amount = stages[dutch_round]['amount']
-    result = 'dutch={}:{},'.format(dutch_winner, dutch_round)
+    result = '{}={}:{},'.format(DUTCH, dutch_winner, dutch_round)
 
     if option > 1:
-        result += 'sealedbid={}:{}/{}:{},'.format(
-            auction.mapping.values()[1], dutch_amount*2,
-            auction.mapping.values()[2], dutch_amount*3,
-        )
+        sealed_bids = [
+            '{}:{}'.format(
+                auction.mapping.values()[index], dutch_amount * (index + 1)
+            ) for index, bid in enumerate(auction.mapping.values()[1:], 1)
+        ]
+        if not sealed_bids:
+            LOGGER.warning('%s and further phases are skipped '
+                           'because of not enough bidders' % SEALEDBID)
+            return result
+
+        result += '{}={},'.format(SEALEDBID, '/'.join(sealed_bids))
 
     if option > 2:
-        result += 'bestbid={}:{}'.format(dutch_winner, dutch_amount*4)
+        result += '{}={}:{}'.format(
+            BESTBID, dutch_winner, dutch_amount * (len(auction.mapping) + 1)
+        )
 
     return result
 

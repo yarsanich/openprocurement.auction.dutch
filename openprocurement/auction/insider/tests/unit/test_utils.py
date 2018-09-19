@@ -802,7 +802,7 @@ def test_get_fast_forward_data(auction, mocker, submission_method_details, expec
     auction.auction_document = {
         'stages': [{'amount': 100} for _ in range(SANDBOX_PARAMETERS['dutch_rounds']+1)]
     }
-    auction.mapping = mocker.MagicMock()
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}  # simulate 3 bidders
     mock_prepare_bid = mocker.patch('openprocurement.auction.insider.utils.prepare_bid', autospec=True)
     mocker.patch('openprocurement.auction.insider.utils.validate_fast_forward_data', autospec=True)
     mock_prepare_bid.return_value = 'prepared_bid'
@@ -937,7 +937,7 @@ def test_run_auction_fast_forward(auction, mocker):
     ], ids=('option1', 'option2', 'option3', 'option4')
 )
 def test_generate_fastforward_data(auction, mocker, option, expected):
-    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, 4)}  # simulate 3 bidders
     auction.auction_document = {
         'stages': [{'amount': 100} for _ in range(SANDBOX_PARAMETERS['dutch_rounds'] + 1)]
     }
@@ -948,6 +948,31 @@ def test_generate_fastforward_data(auction, mocker, option, expected):
         assert generate_fastforward_data(auction, option) == expected
     except Exception as e:
         assert e.message == expected
+
+
+@pytest.mark.parametrize(
+    'bids, expected_result, expected_message',
+    [
+        (0, '', 'dutch and further phases are skipped because of not enough bidders'),
+        (1, 'dutch=1:10,', 'sealedbid and further phases are skipped because of not enough bidders'),
+    ], ids=('0 bids', '1 bid')
+)
+def test_generate_fastforward_data_not_enough_bids(auction, logger, mocker, bids, expected_result, expected_message):
+
+    mocked_randint = mocker.patch('openprocurement.auction.insider.utils.randint')
+    mocked_randint.return_value = 10
+
+    auction.auction_document = {
+        'stages': [{'amount': 100} for _ in range(SANDBOX_PARAMETERS['dutch_rounds'] + 1)]
+    }
+    auction.mapping = {'bidder_id_{}'.format(num): num for num in range(1, bids+1)}
+    option = 'option3'
+
+    result = generate_fastforward_data(auction, option)
+    log_message = ''.join(logger.log_capture_string.getvalue().split('\n'))
+
+    assert result == expected_result
+    assert log_message == expected_message
 
 
 def test_validate_fast_forward_data(auction, mocker, logger):
