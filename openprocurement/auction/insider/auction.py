@@ -34,11 +34,10 @@ from openprocurement.auction.insider.journal import\
     AUCTION_WORKER_SERVICE_AUCTION_NOT_FOUND,\
     AUCTION_WORKER_SERVICE_AUCTION_STATUS_CANCELED,\
     AUCTION_WORKER_SERVICE_AUCTION_RESCHEDULE
-from openprocurement.auction.insider.utils import prepare_audit,\
-    update_auction_document, lock_bids, prepare_results_stage, normalize_audit,\
-    normalize_document
-from openprocurement.auction.utils import delete_mapping, sorting_by_amount
-
+from openprocurement.auction.insider.utils import prepare_audit, \
+    update_auction_document, lock_bids, prepare_results_stage, normalize_audit, \
+    normalize_document, announce_results_data
+from openprocurement.auction.utils import delete_mapping, sorting_by_amount, get_tender_data
 
 LOGGER = logging.getLogger('Auction Worker Insider')
 SCHEDULER = GeventScheduler(job_defaults={"misfire_grace_time": 100},
@@ -331,12 +330,27 @@ class Auction(DutchDBServiceMixin,
                 }
             )
 
-    def post_audit(self):
+    def _prepare_audit(self):
         """
             method that generate audit from auction document from db
         """
         self.generate_request_id()
-        self.get_auction_info()
+        self.get_auction_document()
+        self._auction_data = get_tender_data(
+            self.tender_url,
+            request_id=self.request_id,
+            session=self.session
+        )
+        self.bidders_data = [
+            {'id': bid['id'],
+                'date': bid['date'],
+                'owner': bid.get('owner', '')}
+            for bid in self._auction_data['data'].get('bids', [])
+            if bid.get('status', 'active') == 'active'
+        ]
+        for index, bid in enumerate(self.bidders_data):
+            if bid['id'] not in self.mapping:
+                self.mapping[self.bidders_data[index]['id']] = len(self.mapping.keys()) + 1
         self.audit = prepare_audit(self)
         self.audit['timeline']['auction_start']['time'] = self.auction_document["stages"][0]['start']
         self.audit['timeline'][DUTCH]['timeline']['start'] = self.auction_document["stages"][1]['start']
@@ -388,5 +402,24 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id}
         )
         LOGGER.info(self.audit)
-        if self.put_auction_data():
-            self.save_auction_document()
+
+    def post_audit(self, doc_id=False):
+        """
+        prepare auction_protocol object and post it to datasource if doc_id
+        is not provided, or update existing document with opened bidders
+        information if doc_id was passed as argument
+        """
+        self._prepare_audit()
+
+        if self.worker_defaults.get('with_document_service', False):
+            upload_method = self.upload_audit_file_with_document_service
+        else:
+            upload_method = self.upload_audit_file_without_document_service
+
+        if doc_id:
+            bids_information = announce_results_data(self)
+            self.approve_audit_info_on_announcement(approved=bids_information)
+            upload_method(doc_id)
+        else:
+            doc_id = upload_method()
+            return doc_id
