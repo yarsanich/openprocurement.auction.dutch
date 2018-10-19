@@ -39,6 +39,8 @@ def main():
     )
     parser.add_argument('-f', '--fast-forward',
                         help="run test fast forward", action="store_true")
+    parser.add_argument('--doc_id', dest='doc_id', type=str, default=False,
+                        help='id of existing auction protocol document')
 
     args = parser.parse_args()
     if args.fast_forward:
@@ -86,9 +88,8 @@ def main():
         auction.cancel_auction()
     elif args.cmd == 'reschedule':
         auction.reschedule_auction()
-    elif args.cmd == 'prepare_audit':
-        auction.post_audit()
-
+    elif args.cmd == 'post_audit':
+        print auction.post_audit(args.doc_id)
 
 
 if __name__ == "__main__":

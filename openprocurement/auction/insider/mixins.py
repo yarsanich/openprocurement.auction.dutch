@@ -126,7 +126,9 @@ class DutchDBServiceMixin(object):
                     if ff_data is not None:
                         utils.run_auction_fast_forward(self, ff_data)
                         self.save_auction_document()
-                        self.post_audit()
+                        self._prepare_audit()
+                        if self.put_auction_data():
+                            self.save_auction_document()
                 return
         else:
             self.auction_document = utils.prepare_auction_document(self)

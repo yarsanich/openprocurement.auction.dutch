@@ -185,7 +185,8 @@ def test_prepare_auction_document(auction, mocker):
 
     mock_get_fastforward_data = mocker.patch('openprocurement.auction.insider.utils.get_fast_forward_data')
     mock_run_auction_fast_forward = mocker.patch('openprocurement.auction.insider.utils.run_auction_fast_forward')
-    mock_post_audit = mocker.patch.object(auction, 'post_audit', autospec=True)
+    mock_prepare_audit = mocker.patch.object(auction, '_prepare_audit', autospec=True)
+    mock_put_auction_data = mocker.patch.object(auction, 'put_auction_data', autospec=True)
     auction._auction_data['data']['submissionMethodDetails'] = 'fast-forward'
     auction._auction_data['data']['status'] = 'active.auction'
 
@@ -193,7 +194,8 @@ def test_prepare_auction_document(auction, mocker):
 
     assert mock_get_fastforward_data.call_count == 1
     assert mock_run_auction_fast_forward.call_count == 1
-    assert mock_post_audit.call_count == 1
+    assert mock_prepare_audit.call_count == 1
+    assert mock_put_auction_data.call_count == 1
 
     del auction._auction_data['data']['submissionMethodDetails']
     auction.worker_defaults['sandbox_mode'] = False
@@ -207,7 +209,7 @@ def test_prepare_auction_document(auction, mocker):
     assert mock_generate_request_id.call_count == 3
     assert mock_get_auction_document.call_count == 3
     assert mock_get_auction_document.call_count == 3
-    assert mock_save_auction_document.call_count == 3
+    assert mock_save_auction_document.call_count == 4
     assert mock_get_auction_info.call_count == 3
     assert len(auction.auction_document['stages']) == 87
 
