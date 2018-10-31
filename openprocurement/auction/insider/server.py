@@ -205,6 +205,11 @@ def kickclient():
     abort(401)
 
 
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'health': 'check'})
+
+
 def run_server(auction,
                mapping_expire_time,
                logger,
