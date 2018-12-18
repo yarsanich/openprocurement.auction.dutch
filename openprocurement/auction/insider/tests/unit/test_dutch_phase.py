@@ -36,8 +36,8 @@ def test_end_stage(auction, logger, mocker):
         'initial_value': 'initial_value',
         'current_stage': 1,
         'stages': [
-            {'test_key': 'test_value'},
-            {'test_key': 'test_value'}
+            {'test_key': 'test_value', 'type': 'dutch_0'},
+            {'test_key': 'test_value', 'type': 'dutch_1'}
         ]
     }
 
@@ -220,6 +220,7 @@ def test_end_dutch(auction, logger, mocker):
 
     mock_spawn = mocker.MagicMock()
     mocker.patch('openprocurement.auction.insider.mixins.spawn', mock_spawn)
+    clean_jobs_mock = mocker.patch.object(auction, 'clean_up_preplanned_jobs')
 
     mock_end_auction = mocker.patch.object(auction, 'end_auction', autospec=True)
 
@@ -230,7 +231,7 @@ def test_end_dutch(auction, logger, mocker):
     assert isinstance(dateutil.parser.parse(auction.audit['timeline'][DUTCH]['timeline']['end']), datetime.datetime)
     assert len(auction.auction_document['stages'][1]) == 3
     assert auction.auction_document['stages'][1]['passed'] is True
-    mock_spawn.assert_called_once_with(auction.clean_up_preplanned_jobs)
+    assert clean_jobs_mock.call_count == 1
     assert log_strings[-2] == "No bids on dutch phase. End auction now."
     assert mock_end_auction.call_count == 1
     assert result is None
@@ -243,7 +244,7 @@ def test_end_dutch(auction, logger, mocker):
     assert isinstance(dateutil.parser.parse(auction.audit['timeline'][DUTCH]['timeline']['end']), datetime.datetime)
     assert len(auction.auction_document['stages'][1]) == 3
     assert auction.auction_document['stages'][1]['passed'] is True
-    assert mock_spawn.call_count == 2
+    assert clean_jobs_mock.call_count == 2
 
     assert auction.auction_document['current_phase'] == 'pre-sealedbid'
     assert auction.auction_document['current_stage'] == 2
