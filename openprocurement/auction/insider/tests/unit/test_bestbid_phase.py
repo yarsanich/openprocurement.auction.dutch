@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import pytest
 
-from openprocurement.auction.insider.constants import BESTBID
+from openprocurement.auction.insider.constants import BESTBID, END, PREBESTBID
 
 
 @pytest.mark.parametrize("id,amount,time", [
@@ -118,6 +118,7 @@ def test_switch_to_bestbid(auction, mocker):
     auction.auction_document = {
         'initial_value': 'initial_value',
         'current_stage': 1,
+        'current_phase': PREBESTBID,
         'stages': [
             {'test_key': 'test_value'},
             {'test_key': 'test_value'}
@@ -141,6 +142,44 @@ def test_switch_to_bestbid(auction, mocker):
     assert auction.auction_document['current_phase'] == BESTBID
     mock_update_auction_document.asset_called_once_with(auction)
     assert auction.audit['timeline'][BESTBID]['timeline']['start'] == 'run_time_value'
+
+
+def test_switch_to_bestbid_wrong_phase(auction, mocker):
+    mock_lock_bids = mocker.MagicMock()
+    mocker.patch('openprocurement.auction.insider.mixins.utils.lock_bids', mock_lock_bids)
+    mock_update_auction_document = mocker.MagicMock()
+    mocker.patch('openprocurement.auction.insider.mixins.utils.update_auction_document', mock_update_auction_document)
+    mock_update_stage = mocker.MagicMock()
+    mocker.patch('openprocurement.auction.insider.mixins.utils.update_stage', mock_update_stage)
+    mock_update_stage.return_value = 'run_time_value'
+
+    auction.auction_document = {
+        'initial_value': 'initial_value',
+        'current_stage': 1,
+        'current_phase': END,
+        'stages': [
+            {'test_key': 'test_value'},
+            {'test_key': 'test_value'}
+        ]
+    }
+
+    auction.audit = {
+        'timeline':
+            {
+                BESTBID: {
+                    'timeline': {}
+                }
+            }
+    }
+
+    auction.switch_to_bestbid(1)
+
+    assert mock_lock_bids.call_count == 0
+    assert mock_update_stage.call_count == 0
+
+    assert auction.auction_document['current_phase'] == END
+    assert mock_update_auction_document.call_count == 0
+    assert auction.audit['timeline'][BESTBID]['timeline'] == {}
 
 
 def test_end_bestbid(auction, mocker):
