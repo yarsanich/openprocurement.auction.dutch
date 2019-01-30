@@ -1,4 +1,5 @@
 import logging
+from time import sleep
 
 from copy import deepcopy
 from couchdb.json import use
@@ -247,6 +248,10 @@ class Auction(DutchDBServiceMixin,
             extra={"JOURNAL_REQUEST_ID": self.request_id,
                    "MESSAGE_ID": AUCTION_WORKER_SERVICE_END_AUCTION}
         )
+        LOGGER.debug(
+            "Deleting Scheduler jobs", extra={"JOURNAL_REQUEST_ID": self.request_id}
+        )
+        SCHEDULER.remove_all_jobs()
         LOGGER.debug(
             "Stop server", extra={"JOURNAL_REQUEST_ID": self.request_id}
         )

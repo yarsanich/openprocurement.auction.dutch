@@ -496,9 +496,10 @@ class BestBidAuctionPhase(object):
         return False
 
     def switch_to_bestbid(self, stage):
-        with utils.lock_bids(self), utils.update_auction_document(self):
-            self.auction_document['current_phase'] = BESTBID
-            self.audit['timeline'][BESTBID]['timeline']['start'] = utils.update_stage(self)
+        if self.auction_document['current_phase'] == PREBESTBID:
+            with utils.lock_bids(self), utils.update_auction_document(self):
+                self.auction_document['current_phase'] = BESTBID
+                self.audit['timeline'][BESTBID]['timeline']['start'] = utils.update_stage(self)
 
     def end_bestbid(self, stage):
         with utils.update_auction_document(self):
