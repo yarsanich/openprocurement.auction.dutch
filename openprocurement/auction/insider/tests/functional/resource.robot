@@ -8,7 +8,7 @@ Library        openprocurement.auction.insider.tests.functional.service_keywords
 *** Variables ***
 ${USERS}
 ${USERS_ids}
-${BROWSER}       phantomjs
+${BROWSER}       chrome
 
 *** Keywords ***
 Отримати вхідні дані
@@ -18,6 +18,10 @@ ${BROWSER}       phantomjs
   ${USERS_ids}=  Convert to List  ${USERS}
   Set Global Variable  ${USERS}
   Set Global Variable  ${USERS_ids}
+  Log  ${USERS_ids}
+  :FOR  ${index}  IN RANGE  0  3
+  \  Log  ${USERS['${USERS_ids[${index}]}']['login_url']}  WARN
+
 
 Долучитись до аукціону ${user_index} учасником
   ${user_index}=  Evaluate  ${user_index}-1

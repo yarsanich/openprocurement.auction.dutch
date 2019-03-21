@@ -5,7 +5,7 @@ ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), 
 *** Keywords ***
 Підготувати клієнт для ${user_index} користувача
     ${user_id}=  Get Variable Value  ${USERS_ids[${user_index}]}
-    Open Browser  http://prozorro.org/  ${BROWSER}  ${user_id}
+    Open Browser  https://prozorro.sale/  ${BROWSER}  ${user_id}
     Set Window Position  @{USERS['${user_id}']['position']}
     Set Window Size  @{USERS['${user_id}']['size']}
 
