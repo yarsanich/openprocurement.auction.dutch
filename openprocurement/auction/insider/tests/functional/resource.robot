@@ -30,7 +30,8 @@ ${BROWSER}       chrome
   Перевірити інформацію з меню
 
 Долучитись до аукціону глядачем
-  Open Browser  http://localhost:8090/insider-auctions/11111111111111111111111111111111  ${BROWSER}
+  ${auctionId}=  Get Variable Value  ${auction_id}
+  Open Browser  http://localhost:8090/insider-auctions/${auctionId}  ${BROWSER}
   Set Window Position  ${0}  ${0}
   Set Window Size  ${300}  ${1200}
   Wait Until Page Contains  Ви спостерігач і не можете робити ставки

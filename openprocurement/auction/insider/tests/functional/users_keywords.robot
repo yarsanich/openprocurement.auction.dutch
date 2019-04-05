@@ -43,6 +43,7 @@ ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), 
     Set Global Variable  ${step_amount}
     ${invalid_amount}=  Evaluate  ${step_amount}-1
     Поставити ставку  ${invalid_amount}  Ваша ставка повинна перевищувати ставку переможця попередньої стадії як мінімум на 1 крок (1% від початкової вартості)  ${sealedbid_amount}
+    Click Element  id=clear-bid-button
 
 Поставити ставку
     [Arguments]  ${step}  ${msg}  ${locator}
@@ -52,7 +53,7 @@ ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), 
     ${last_amount}=  convert_amount_to_number  ${last_amount}
     ${amount}=  Evaluate  ${last_amount}+${step}
     ${input_amount}=  Convert To String  ${amount}
-    Input Text  id=bid-amount-input  ${input_amount}
+    Input Text  name=bid  ${input_amount}
     sleep  1s
     Capture Page Screenshot
     Highlight Elements With Text On Time  Зробити ставку
@@ -64,7 +65,7 @@ ${sealedbid_amount}  xpath=(//div[contains(concat(' ', normalize-space(@class), 
     Wait Until Page Contains Element  id=edit-bid-button
     Highlight Element  id=edit-bid-button
     Click Element  id=edit-bid-button
-    Input Text  id=bid-amount-input  1
+    Input Text  name=bid  1
     Capture Page Screenshot
     Click Element  id=clear-bid-button
     Capture Page Screenshot
