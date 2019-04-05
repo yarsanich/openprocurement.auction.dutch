@@ -21,11 +21,12 @@ def prepare_users_data(tender_data):
     with open(auction_worker_defaults) as auction_worker_defaults_file:
         auction_worker_defaults_info = yaml.load(auction_worker_defaults_file)
     users_data = {}
+    auction_id = BuiltIn().get_variable_value("${auction_id}")
     for index, bid in enumerate(tender_data["bids"]):
         signer = Signer(auction_worker_defaults_info["SIGNATURE_KEY"].decode('hex'))
-        signature = quote(b64encode(signer.signature("{}_{}".format("11111111111111111111111111111111", str(bid['id'])))))
+        signature = quote(b64encode(signer.signature("{}_{}".format(auction_id, str(bid['id'])))))
         users_data[bid["id"]] = {
-            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id="11111111111111111111111111111111") +  '/login?bidder_id={}&signature={}'.format(
+            'login_url': auction_worker_defaults_info['AUCTIONS_URL'].format(auction_id=auction_id) +  '/login?bidder_id={}&signature={}'.format(
                 bid["id"], signature
             ),
             'amount': bid.get('value', {}).get('amount', ''),
